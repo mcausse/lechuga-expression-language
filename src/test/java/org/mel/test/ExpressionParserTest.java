@@ -130,19 +130,15 @@ public class ExpressionParserTest {
         {
             Map<String, Object> model = new HashMap<>();
             model.put("name", Arrays.asList("mhc", "mem"));
+            model.put("i", 1);
 
-            List<Token> ts = t.tokenize("test", "name[1]", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("mem", ast.evaluate(model).toString());
             eval("mem", "name[1]", model);
+            eval("mem", "name[i]", model);
+            eval("alo mhc!", "'alo '+name[i/2]+'!'", model);
         }
         {
             Map<String, Object> model = new HashMap<>();
             model.put("name", "mhc");
-
-            List<Token> ts = t.tokenize("test", "name.class.simpleName.trim.toUpperCase", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("STRING", ast.evaluate(model).toString());
             eval("STRING", "name.class.simpleName.trim.toUpperCase", model);
         }
 
@@ -150,18 +146,12 @@ public class ExpressionParserTest {
             Map<String, Object> model = new HashMap<>();
             model.put("age", 32);
 
-            List<Token> ts = t.tokenize("test", "age>=32&&age<=45", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("true", ast.evaluate(model).toString());
             eval(true, "age>=32&&age<=45", model);
         }
         {
             Map<String, Object> model = new HashMap<>();
             model.put("alive", true);
 
-            List<Token> ts = t.tokenize("test", "alive&&true", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("true", ast.evaluate(model).toString());
             eval(true, "alive&&true", model);
         }
 
@@ -195,6 +185,28 @@ public class ExpressionParserTest {
         eval("ko", " 0?'ok':'ko'", null);
         eval("ok", " 'a'?'ok':'ko'", null);
         eval("ko", " ''?'ok':'ko'", null);
+
+        eval("is ok", " 3+3==3*2?'is'+' '+'ok':null", null);
+        eval(null, " 3%3!=0?true:null", null);
+
+        {
+            String exp = " long(c1 ? (c2?1:2) : (c3?3:4))";
+
+            Map<String, Object> model = new HashMap<>();
+            model.put("c1", true);
+            model.put("c2", true);
+            model.put("c3", true);
+
+            eval(1L, exp, model);
+            model.put("c2", false);
+            eval(2L, exp, model);
+
+            model.put("c1", false);
+            eval(3L, exp, model);
+
+            model.put("c3", false);
+            eval(4L, exp, model);
+        }
 
         {
             Map<String, Object> model = new HashMap<>();

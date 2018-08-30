@@ -25,16 +25,57 @@ null
 'jou'
 => jou
 
-:jou
-=> jou
+long (10/3)
+=> 3
+
+long 10.9 / long 3.27
+=> 3
+
+10%3==1
+=> true
+
+typeof short 3
+=> Short
+
+typeof int 3
+=> Integer
+
+typeof 3
+=> Double
+
+typeof 3.4
+=> Double
+
+typeof 'jou'
+=> String
+
+typeof true
+=> Boolean
+
+typeof false
+=> Boolean
+
+typeof null
+=> null
+
+
+=> null
 
 {name=mhc}
 name
 => mhc
 
-{name=[mhc, mem]}
+{name=[mhc, mem], i=1}
 name[1]
 => mem
+
+{name=[mhc, mem], i=1}
+name[i]
+=> mem
+
+{name=[mhc, mem], i=1}
+'alo '+name[i/2]+'!'
+=> alo mhc!
 
 {name=mhc}
 name.class.simpleName.trim.toUpperCase
@@ -81,13 +122,16 @@ null eq null
 null eq null && true || false==true
 => true
 
-:jou eq 'jou'
+'jou' eq 'jou'
 => true
 
-:jou
+'jou ' eq 'jou'
+=> false
+
+'jou'
 => jou
 
-:jou+:juas
+'jou'+'juas'
 => joujuas
 
 short 2 + short 3
@@ -108,6 +152,49 @@ double 2 + double 3
 string int long 3.14159
 => 3
 
+null?'ok':'ko'
+=> ko
+
+true?'ok':'ko'
+=> ok
+
+false?'ok':'ko'
+=> ko
+
+1?'ok':'ko'
+=> ok
+
+0?'ok':'ko'
+=> ko
+
+'a'?'ok':'ko'
+=> ok
+
+''?'ok':'ko'
+=> ko
+
+3+3==3*2?'is'+' '+'ok':null
+=> is ok
+
+3%3!=0?true:null
+=> null
+
+{c3=true, c1=true, c2=true}
+long(c1 ? (c2?1:2) : (c3?3:4))
+=> 1
+
+{c3=true, c1=true, c2=false}
+long(c1 ? (c2?1:2) : (c3?3:4))
+=> 2
+
+{c3=true, c1=false, c2=false}
+long(c1 ? (c2?1:2) : (c3?3:4))
+=> 3
+
+{c3=false, c1=false, c2=false}
+long(c1 ? (c2?1:2) : (c3?3:4))
+=> 4
+
 {a={b=jou!}}
 a['b']
 => jou!
@@ -116,9 +203,17 @@ a['b']
 a.b
 => jou!
 
-{a=[[Ljava.lang.Integer;@433c675d}
+{a={b=jou!}}
+keys a
+=> [b]
+
+{a=[[Ljava.lang.Integer;@37bba400}
 a[1][0]
 => 3
+
+{a=[[Ljava.lang.Integer;@37bba400}
+keys a
+=> [0, 1]
 
 
 ```

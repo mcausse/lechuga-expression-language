@@ -17,10 +17,32 @@ import org.mel.tokenizer.TokenIterator;
 //*      <exp2> ::= <exp3> [<op-relational> <exp3>]
 //*      <exp3> ::= <exp4> {<op-addsub> <exp4>}
 //*      <exp4> ::= <exp5> {<op-muldivmod> <exp5>}
-//*      <exp5> ::= {"not"|"int"|"float"|...|"-"|"keys"|"typeof"} <exp6>
+//*      <exp5> ::= {<unary-op>} <exp6>
 //*      <exp6> ::= <expN> {"[" <exp> "]"}
 //*      <expN> ::= "(" <exp> ")" | <var> | NUM | STRING | BOOL | "null"
 //*      <var>  ::= IDENT {"." IDENT}
+//*
+//*      <op-or>            ::= "or" | "||"
+//*      <op-and>           ::= "and" | "&&"
+//*      <op-relational>    ::= "eq" | "==" | "ne" | "!=" | "le" | "<=" | "ge" | ">=" | "lt" | "<" | "gt" | ">"
+//*      <op-addsub>        ::= "+" | "-"
+//*      <op-muldivmod>     ::= "*" | "/" | "%"
+//*      <unary-op>         ::= "not" | "byte" | "short" | "int" | "long" |
+//*                             "float" | "double" | "string" | "keys" | "typeof" | "-"
+//*
+//*     TODO crides a funcions!
+//*     <exp55> ::= <exp6> { "(" [ <exp> {"," <exp>}] ")" }
+//*
+//*     <method-ref> ::= <exp> "->" IDENT
+//*
+//*     {x,y=>x*y}(2,3)
+//*     <closure> ::= "{" [IDENT {"," IDENT}] "=>" <exp> "}"
+//*
+//*
+//*     3->intValue()
+//*
+//*
+//*
 public class ExpressionParser {
 
     public static interface Ast {
@@ -60,7 +82,7 @@ public class ExpressionParser {
                 Ast elseAst = parseExp0Ast(i);
                 return new TernaryAst(r, thenAst, elseAst);
             }
-            throw new RuntimeException("expected : after ?");
+            throw new RuntimeException("expected : after ? " + i.current());
         } else {
             return r;
         }
@@ -83,6 +105,9 @@ public class ExpressionParser {
             right.add(parseExp1Ast(i));
         }
 
+        if (ops.isEmpty()) {
+            return left;
+        }
         return new MultipleBinaryAst(left, ops, right);
     }
 
@@ -103,6 +128,9 @@ public class ExpressionParser {
             right.add(parseExp2Ast(i));
         }
 
+        if (ops.isEmpty()) {
+            return left;
+        }
         return new MultipleBinaryAst(left, ops, right);
     }
 
@@ -126,6 +154,9 @@ public class ExpressionParser {
             right = parseExp3Ast(i);
         }
 
+        if (op == null) {
+            return left;
+        }
         return new SingleBinaryAst(left, op, right);
     }
 
@@ -147,6 +178,9 @@ public class ExpressionParser {
             right.add(parseExp4Ast(i));
         }
 
+        if (ops.isEmpty()) {
+            return left;
+        }
         return new MultipleBinaryAst(left, ops, right);
     }
 
@@ -169,6 +203,9 @@ public class ExpressionParser {
             right.add(parseExp5Ast(i));
         }
 
+        if (ops.isEmpty()) {
+            return left;
+        }
         return new MultipleBinaryAst(left, ops, right);
     }
 
@@ -192,6 +229,9 @@ public class ExpressionParser {
         }
         Ast right = parseExp6Ast(i);
 
+        if (ops.isEmpty()) {
+            return right;
+        }
         return new UnaryAst(ops, right);
     }
 
@@ -208,6 +248,10 @@ public class ExpressionParser {
                         "expected " + EToken.OPEN_CLAU + ", but readed " + i.current());
             }
             i.next(); // chupa ]
+        }
+
+        if (right.isEmpty()) {
+            return left;
         }
         return new Exp6Ast(left, right);
     }
@@ -379,7 +423,7 @@ public class ExpressionParser {
                     Object rightVal = right.evaluate(model);
                     if ("eq".equals(op) || "==".equals(op)) {
                         r = JRuntime.eq(r, rightVal);
-                    } else if ("ne".equals(op) || "==".equals(op)) {
+                    } else if ("ne".equals(op) || "!=".equals(op)) {
                         r = JRuntime.ne(r, rightVal);
                     } else if ("lt".equals(op) || "<".equals(op)) {
                         r = JRuntime.lt(r, rightVal);
