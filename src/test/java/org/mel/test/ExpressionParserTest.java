@@ -1,7 +1,6 @@
 package org.mel.test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import java.util.Arrays;
@@ -23,7 +22,7 @@ public class ExpressionParserTest {
     final ExpressionParser ep = new ExpressionParser();
 
     @Test
-    public void testName() throws Exception {
+    public void testAstToString() throws Exception {
 
         ExpressionTokenizer t = new ExpressionTokenizer();
 
@@ -72,51 +71,34 @@ public class ExpressionParserTest {
         }
     }
 
+    void eval(Object expectedResult, String expression, Map<String, Object> model) {
+        ExpressionTokenizer t = new ExpressionTokenizer();
+        List<Token> ts = t.tokenize("test", expression, 1, 1);
+        Ast ast = ep.parseExpression(ts);
+        assertEquals(expectedResult, ast.evaluate(model));
+
+        if (model != null) {
+            System.out.println(model);
+        }
+        System.out.println(expression.trim());
+        System.out.println("=> " + expectedResult);
+        System.out.println();
+    }
+
     @Test
-    public void testName2() throws Exception {
+    public void testNameEvaluate() throws Exception {
 
         ExpressionTokenizer t = new ExpressionTokenizer();
 
-        {
-            List<Token> ts = t.tokenize("test", "1+2*3+4", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("11.0", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "1 eq 1 and (1+1 eq 2 or false)", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("true", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "1 eq 1 and (1+2 eq 2 or false)", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("false", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "null eq null", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("true", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "'jou'=='juas' || 'a' == 'a'", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("true", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "not false and not(not true)", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("true", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "null", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertNull(ast.evaluate(null));
-        }
-        {
-            List<Token> ts = t.tokenize("test", "'jou'", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("jou", ast.evaluate(null));
-        }
+        eval(11.0, "1+2*3+4", null);
+        eval(true, "1 eq 1 and (1+1 eq 2 or false)", null);
+        eval(false, "1 eq 1 and (1+2 eq 2 or false)", null);
+        eval(true, "null eq null", null);
+        eval(true, "'jou'=='juas' || 'a' == 'a'", null);
+        eval(true, "not false and not(not true)", null);
+        eval(null, "null", null);
+        eval("jou", "'jou'", null);
+        eval("jou", ":jou", null);
 
         ///////////////////
 
@@ -127,6 +109,7 @@ public class ExpressionParserTest {
             List<Token> ts = t.tokenize("test", "name", 1, 1);
             Ast ast = ep.parseExpression(ts);
             assertEquals("mhc", ast.evaluate(model).toString());
+            eval("mhc", "name", model);
         }
 
         {
@@ -136,6 +119,7 @@ public class ExpressionParserTest {
             List<Token> ts = t.tokenize("test", "name[1]", 1, 1);
             Ast ast = ep.parseExpression(ts);
             assertEquals("mem", ast.evaluate(model).toString());
+            eval("mem", "name[1]", model);
         }
         {
             Map<String, Object> model = new HashMap<>();
@@ -144,6 +128,7 @@ public class ExpressionParserTest {
             List<Token> ts = t.tokenize("test", "name.class.simpleName.trim.toUpperCase", 1, 1);
             Ast ast = ep.parseExpression(ts);
             assertEquals("STRING", ast.evaluate(model).toString());
+            eval("STRING", "name.class.simpleName.trim.toUpperCase", model);
         }
 
         {
@@ -153,6 +138,7 @@ public class ExpressionParserTest {
             List<Token> ts = t.tokenize("test", "age>=32&&age<=45", 1, 1);
             Ast ast = ep.parseExpression(ts);
             assertEquals("true", ast.evaluate(model).toString());
+            eval(true, "age>=32&&age<=45", model);
         }
         {
             Map<String, Object> model = new HashMap<>();
@@ -161,63 +147,30 @@ public class ExpressionParserTest {
             List<Token> ts = t.tokenize("test", "alive&&true", 1, 1);
             Ast ast = ep.parseExpression(ts);
             assertEquals("true", ast.evaluate(model).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "long 1.2", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("1", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "int 1", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("1", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "int(1+1)", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("2", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "(int 1)+1", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("2.0", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "(int 3.14159)", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("3", ast.evaluate(null).toString());
+            eval(true, "alive&&true", model);
         }
 
-        {
-            List<Token> ts = t.tokenize("test", "-1+-1", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("-2.0", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "1---1", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("0.0", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "-(-(-1))", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("-1.0", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "---1", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("-1.0", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "null eq null", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("true", ast.evaluate(null).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "null eq null && true || false==true", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("true", ast.evaluate(null).toString());
-        }
+        eval(1L, "long 1.2", null);
+        eval(1, "int 1", null);
+        eval(2, "int(1+1)", null);
+        eval(2.0, "(int 1)+1", null);
+        eval(3, "(int 3.14159)", null);
+        eval(-2.0, "-1+-1", null);
+        eval(0.0, "1---1", null);
+        eval(-1.0, "-(-(-1))", null);
+        eval(-1.0, "---1", null);
+        eval(true, "null eq null", null);
+        eval(true, "null eq null && true || false==true", null);
+
+        eval(true, ":jou eq 'jou'", null);
+        eval("jou", " :jou ", null);
+        eval("joujuas", " :jou+:juas ", null);
+        eval((short) 5, " short 2 + short 3", null);
+        eval(5, " int 2 + int 3", null);
+        eval(5L, " long 2 + long 3", null);
+        eval(5.0f, " float 2 + float 3", null);
+        eval(5.0, " double 2 + double 3", null);
+        eval("3", " string int long 3.14159", null);
 
         {
             Map<String, Object> model = new HashMap<>();
@@ -225,33 +178,16 @@ public class ExpressionParserTest {
             model2.put("b", "jou!");
             model.put("a", model2);
 
-            List<Token> ts = t.tokenize("test", "a.b", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("jou!", ast.evaluate(model).toString());
-        }
-        {
-            Map<String, Object> model = new HashMap<>();
-            Map<String, Object> model2 = new HashMap<>();
-            model2.put("b", "jou!");
-            model.put("a", model2);
-
-            List<Token> ts = t.tokenize("test", "a['b']", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("jou!", ast.evaluate(model).toString());
+            eval("jou!", "a['b']", model);
+            eval("jou!", "a.b", model);
         }
         {
             Map<String, Object> model = new HashMap<>();
             model.put("a", new Integer[][] { { 1, 2 }, { 3, 4 } });
 
-            List<Token> ts = t.tokenize("test", "a[1][0]", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("3", ast.evaluate(model).toString());
+            eval(3, "a[1][0]", model);
         }
-        {
-            List<Token> ts = t.tokenize("test", "'jou'", 1, 1);
-            Ast ast = ep.parseExpression(ts);
-            assertEquals("jou", ast.evaluate(null).toString());
-        }
+
         {
             try {
                 t.tokenize("test", "'jou", 1, 1);

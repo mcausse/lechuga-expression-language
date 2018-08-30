@@ -217,7 +217,7 @@ public class JRuntime {
             case 0:
                 return n1.byteValue() + n2.byteValue();
             case 1:
-                return n1.shortValue() + n2.shortValue();
+                return Short.valueOf((short) (n1.shortValue() + n2.shortValue()));
             case 2:
                 return n1.intValue() + n2.intValue();
             case 3:
