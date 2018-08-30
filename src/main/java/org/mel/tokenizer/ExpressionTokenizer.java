@@ -49,20 +49,6 @@ public class ExpressionTokenizer {
                 column++;
                 i++;
                 break;
-            case ':': {
-
-                i++; // chupa :
-                column++;
-
-                int start = i;
-                while (i < text.length() && Character.isJavaIdentifierPart(text.charAt(i))) {
-                    column++;
-                    i++;
-                }
-                String value = text.substring(start, i);
-                r.add(new Token(EToken.STR, value, new SourceRef(sourceFile, openingLine, openingColumn)));
-                break;
-            }
             case '\'': {
 
                 i++; // chupa '
@@ -127,7 +113,7 @@ public class ExpressionTokenizer {
                     }
                 }
                 {
-                    List<Character> cs1 = Arrays.asList('.', '+', '-', '*', '/', '%', '>', '<');
+                    List<Character> cs1 = Arrays.asList('.', '+', '-', '*', '/', '%', '>', '<', '?', ':');
                     List<String> cs2 = Arrays.asList("==", "!=", "<>", ">=", "<=", "&&", "||", "/*", "*/");
 
                     if (i + 1 < text.length()) {

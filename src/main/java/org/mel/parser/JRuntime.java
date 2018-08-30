@@ -7,12 +7,18 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 public class JRuntime {
+
+    public static Object typeOf(Object r) {
+        if (r == null) {
+            return "null";
+        }
+        return r.getClass().getSimpleName();
+    }
 
     @SuppressWarnings({ "rawtypes" })
     public static Collection<?> toKeysList(Object elements) {
@@ -22,7 +28,11 @@ public class JRuntime {
             /*
              * LIST
              */
-            return (Collection<?>) elements;
+            List<Integer> r = new ArrayList<>();
+            for (int i = 0; i < ((Collection<?>) elements).size(); i++) {
+                r.add(i);
+            }
+            return r;
         } else if (elements instanceof Map) {
             /*
              * MAP
@@ -33,7 +43,12 @@ public class JRuntime {
             /*
              * ARRAY
              */
-            return Arrays.asList((Object[]) elements);
+            // return Arrays.asList((Object[]) elements);
+            List<Integer> r = new ArrayList<>();
+            for (int i = 0; i < Array.getLength(elements); i++) {
+                r.add(i);
+            }
+            return r;
         } else {
             throw new RuntimeException(String.valueOf(elements)); // TODO
         }
@@ -500,6 +515,25 @@ public class JRuntime {
     public static Boolean not(Object o) {
         Boolean b = getBoolean(o);
         return !b;
+    }
+
+    public static boolean isTrue(Object o) {
+        if (o == null) {
+            return false;
+        } else if (o instanceof Boolean) {
+            return (Boolean) o;
+        } else if (o instanceof Number) {
+            return ((Number) o).doubleValue() > 0.0;
+        } else if (o instanceof String) {
+            return ((String) o).length() > 0;
+        } else if (o instanceof Collection) {
+            return ((Collection<?>) o).isEmpty();
+        } else if (o.getClass().isArray()) {
+            return Array.getLength(o) > 0;
+        } else if (o instanceof Map) {
+            return ((Map<?, ?>) o).isEmpty();
+        }
+        return true;
     }
 
 }

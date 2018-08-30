@@ -11,14 +11,15 @@ import org.mel.tokenizer.Token;
 import org.mel.tokenizer.TokenException;
 import org.mel.tokenizer.TokenIterator;
 
-//*      <exp>  ::= <exp1> {<op-or> <exp1>}             (menys prioritari!)
+//*      <exp>  ::= <exp0> ["?" <exp0> ":" <exp0>]          (menys prioritari!)
+//*      <exp0> ::= <exp1> {<op-or> <exp1>}
 //*      <exp1> ::= <exp2> {<op-and> <exp2>}
 //*      <exp2> ::= <exp3> [<op-relational> <exp3>]
 //*      <exp3> ::= <exp4> {<op-addsub> <exp4>}
 //*      <exp4> ::= <exp5> {<op-muldivmod> <exp5>}
-//*      <exp5> ::= {"not"|"int"|"float"|...|"-"} <exp6>
+//*      <exp5> ::= {"not"|"int"|"float"|...|"-"|"keys"|"typeof"} <exp6>
 //*      <exp6> ::= <expN> {"[" <exp> "]"}
-//*      <expN> ::= "(" <exp> ")" | <var> | <num> | <string> | <boolean> | "null"
+//*      <expN> ::= "(" <exp> ")" | <var> | NUM | STRING | BOOL | "null"
 //*      <var>  ::= IDENT {"." IDENT}
 public class ExpressionParser {
 
@@ -28,15 +29,16 @@ public class ExpressionParser {
         SourceRef getSourceRef();
     }
 
-    // final ExpressionTokenizer t = new ExpressionTokenizer();
-
     public Ast parseExpression(List<Token> expressionTokens) {
+        if (expressionTokens.isEmpty()) {
+            return new ExpNAst(null, null);
+        }
         TokenIterator<Token> i = new TokenIterator<>(expressionTokens);
         Token t = i.current();
         try {
             Ast r = parseExpression(i);
             if (i.notEof()) {
-                throw new RuntimeException("grammar exception");
+                throw new RuntimeException("grammar exception: EOF not reached at the end of expression");
             }
             return r;
         } catch (Exception e) {
@@ -49,6 +51,22 @@ public class ExpressionParser {
     }
 
     protected Ast parseExpAst(TokenIterator<Token> i) {
+        Ast r = parseExp0Ast(i);
+        if (i.hasNext() && i.current().getType() == EToken.SYM && i.current().getValue().equals("?")) {
+            i.next(); // chupa ?
+            Ast thenAst = parseExp0Ast(i);
+            if (i.hasNext() && i.current().getType() == EToken.SYM && i.current().getValue().equals(":")) {
+                i.next(); // chupa :
+                Ast elseAst = parseExp0Ast(i);
+                return new TernaryAst(r, thenAst, elseAst);
+            }
+            throw new RuntimeException("expected : after ?");
+        } else {
+            return r;
+        }
+    }
+
+    protected Ast parseExp0Ast(TokenIterator<Token> i) {
         Ast left = parseExp1Ast(i);
 
         List<String> ops = new ArrayList<>();
@@ -165,6 +183,8 @@ public class ExpressionParser {
         /**/i.current().getValue().equals("float") ||
         /**/i.current().getValue().equals("double") ||
         /**/i.current().getValue().equals("string") ||
+        /**/i.current().getValue().equals("keys") ||
+        /**/i.current().getValue().equals("typeof") ||
         /**/i.current().getValue().equals("-")
         /**/)) {
             ops.add((String) i.current().getValue());
@@ -237,6 +257,35 @@ public class ExpressionParser {
         }
 
         return new VarAst(sourceRef, idents);
+    }
+
+    public static class TernaryAst implements Ast {
+
+        final Ast ifAst;
+        final Ast thenAst;
+        final Ast elseAst;
+
+        public TernaryAst(Ast ifAst, Ast thenAst, Ast elseAst) {
+            super();
+            this.ifAst = ifAst;
+            this.thenAst = thenAst;
+            this.elseAst = elseAst;
+        }
+
+        @Override
+        public Object evaluate(Map<String, Object> model) {
+            Object ifValue = ifAst.evaluate(model);
+            if (JRuntime.isTrue(ifValue)) {
+                return thenAst.evaluate(model);
+            } else {
+                return elseAst.evaluate(model);
+            }
+        }
+
+        @Override
+        public SourceRef getSourceRef() {
+            return ifAst.getSourceRef();
+        }
     }
 
     public static class MultipleBinaryAst implements Ast {
@@ -399,6 +448,10 @@ public class ExpressionParser {
                         r = JRuntime.toDouble(r);
                     } else if ("string".equals(op)) {
                         r = JRuntime.toString(r);
+                    } else if ("keys".equals(op)) {
+                        r = JRuntime.toKeysList(r);
+                    } else if ("typeof".equals(op)) {
+                        r = JRuntime.typeOf(r);
                     } else if ("-".equals(op)) {
                         r = JRuntime.neg(r);
                     } else {

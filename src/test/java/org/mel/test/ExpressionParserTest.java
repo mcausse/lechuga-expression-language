@@ -98,7 +98,22 @@ public class ExpressionParserTest {
         eval(true, "not false and not(not true)", null);
         eval(null, "null", null);
         eval("jou", "'jou'", null);
-        eval("jou", ":jou", null);
+
+        eval(3L, "long (10/3)", null);
+        eval(3L, "long 10.9 / long 3.27", null);
+
+        eval(true, "10%3==1", null);
+
+        eval("Short", "typeof short 3", null);
+        eval("Integer", "typeof int 3", null);
+        eval("Double", "typeof 3", null);
+        eval("Double", "typeof 3.4", null);
+        eval("String", "typeof 'jou'", null);
+        eval("Boolean", "typeof true", null);
+        eval("Boolean", "typeof false", null);
+        eval("null", "typeof null", null);
+
+        eval(null, "", null);
 
         ///////////////////
 
@@ -162,15 +177,24 @@ public class ExpressionParserTest {
         eval(true, "null eq null", null);
         eval(true, "null eq null && true || false==true", null);
 
-        eval(true, ":jou eq 'jou'", null);
-        eval("jou", " :jou ", null);
-        eval("joujuas", " :jou+:juas ", null);
+        eval(true, "'jou' eq 'jou'", null);
+        eval(false, "'jou ' eq 'jou'", null);
+        eval("jou", " 'jou' ", null);
+        eval("joujuas", " 'jou'+'juas' ", null);
         eval((short) 5, " short 2 + short 3", null);
         eval(5, " int 2 + int 3", null);
         eval(5L, " long 2 + long 3", null);
         eval(5.0f, " float 2 + float 3", null);
         eval(5.0, " double 2 + double 3", null);
         eval("3", " string int long 3.14159", null);
+
+        eval("ko", " null?'ok':'ko'", null);
+        eval("ok", " true?'ok':'ko'", null);
+        eval("ko", " false?'ok':'ko'", null);
+        eval("ok", " 1?'ok':'ko'", null);
+        eval("ko", " 0?'ok':'ko'", null);
+        eval("ok", " 'a'?'ok':'ko'", null);
+        eval("ko", " ''?'ok':'ko'", null);
 
         {
             Map<String, Object> model = new HashMap<>();
@@ -180,12 +204,14 @@ public class ExpressionParserTest {
 
             eval("jou!", "a['b']", model);
             eval("jou!", "a.b", model);
+            eval(((Map<?, ?>) model.get("a")).keySet(), "keys a", model);
         }
         {
             Map<String, Object> model = new HashMap<>();
             model.put("a", new Integer[][] { { 1, 2 }, { 3, 4 } });
 
             eval(3, "a[1][0]", model);
+            eval(Arrays.asList(0, 1), "keys a", model);
         }
 
         {
@@ -216,9 +242,9 @@ public class ExpressionParserTest {
         ExpressionEvaluator e = new ExpressionEvaluator();
         SourceRef s = new SourceRef("test", 1, 1);
 
-        assertEquals("true", e.evaluate(s, ":jou eq 'jou'", null).toString());
-        assertEquals("jou", e.evaluate(s, " :jou ", null));
-        assertEquals("joujuas", e.evaluate(s, " :jou+:juas ", null));
+        assertEquals("true", e.evaluate(s, "'jou' eq 'jou'", null).toString());
+        assertEquals("jou", e.evaluate(s, " 'jou' ", null));
+        assertEquals("joujuas", e.evaluate(s, " 'jou'+'juas' ", null));
 
         assertEquals("5", e.evaluate(s, " short 2 + short 3", null).toString());
         assertEquals("5", e.evaluate(s, " int 2 + int 3", null).toString());
