@@ -493,27 +493,20 @@ public class JRuntime {
         return !safeEquals(o1, o2);
     }
 
-    static Boolean getBoolean(Object o) {
-        if (o == null || !(o instanceof Boolean)) {
-            throw new RuntimeException();
-        }
-        return (Boolean) o;
-    }
-
     public static Boolean and(Object o1, Object o2) {
-        Boolean b1 = getBoolean(o1);
-        Boolean b2 = getBoolean(o2);
+        Boolean b1 = isTrue(o1);
+        Boolean b2 = isTrue(o2);
         return b1 && b2;
     }
 
     public static Boolean or(Object o1, Object o2) {
-        Boolean b1 = getBoolean(o1);
-        Boolean b2 = getBoolean(o2);
+        Boolean b1 = isTrue(o1);
+        Boolean b2 = isTrue(o2);
         return b1 || b2;
     }
 
     public static Boolean not(Object o) {
-        Boolean b = getBoolean(o);
+        Boolean b = isTrue(o);
         return !b;
     }
 

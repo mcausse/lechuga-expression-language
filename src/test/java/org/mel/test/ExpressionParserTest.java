@@ -71,22 +71,32 @@ public class ExpressionParserTest {
         }
     }
 
+    void markdownTableHeader() {
+
+        System.out.println("Model | Expression | Result");
+        System.out.println("--- | --- | ---");
+    }
+
     void eval(Object expectedResult, String expression, Map<String, Object> model) {
         ExpressionTokenizer t = new ExpressionTokenizer();
         List<Token> ts = t.tokenize("test", expression, 1, 1);
         Ast ast = ep.parseExpression(ts);
         assertEquals(expectedResult, ast.evaluate(model));
 
-        if (model != null) {
-            System.out.println(model);
+        if (model == null) {
+            System.out.print(" | ");
+        } else {
+            System.out.print(" | " + model);
         }
-        System.out.println(expression.trim());
-        System.out.println("=> " + expectedResult);
+        System.out.print(" | " + expression.trim());
+        System.out.print(" | " + expectedResult);
         System.out.println();
     }
 
     @Test
     public void testNameEvaluate() throws Exception {
+
+        markdownTableHeader();
 
         ExpressionTokenizer t = new ExpressionTokenizer();
 
@@ -140,6 +150,9 @@ public class ExpressionParserTest {
             Map<String, Object> model = new HashMap<>();
             model.put("name", "mhc");
             eval("STRING", "name.class.simpleName.trim.toUpperCase", model);
+            
+            eval("STRING", "'a'.class.simpleName.trim.toUpperCase", null);
+            eval("STRING", "3.class.simpleName.trim.toUpperCase", null);
         }
 
         {
@@ -159,7 +172,10 @@ public class ExpressionParserTest {
         eval(1, "int 1", null);
         eval(2, "int(1+1)", null);
         eval(2.0, "(int 1)+1", null);
+        eval(2, "(int 1)+int 1", null);
         eval(3, "(int 3.14159)", null);
+        eval(3, "(int(3.14159))", null);
+        eval(314, "(int(3.14159*100))", null);
         eval(-2.0, "-1+-1", null);
         eval(0.0, "1---1", null);
         eval(-1.0, "-(-(-1))", null);
