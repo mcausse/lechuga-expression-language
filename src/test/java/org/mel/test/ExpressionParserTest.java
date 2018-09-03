@@ -10,8 +10,8 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.mel.ExpressionEvaluator;
+import org.mel.parser.Ast;
 import org.mel.parser.ExpressionParser;
-import org.mel.parser.ExpressionParser.Ast;
 import org.mel.tokenizer.ExpressionTokenizer;
 import org.mel.tokenizer.SourceRef;
 import org.mel.tokenizer.Token;
@@ -150,9 +150,6 @@ public class ExpressionParserTest {
             Map<String, Object> model = new HashMap<>();
             model.put("name", "mhc");
             eval("STRING", "name.class.simpleName.trim.toUpperCase", model);
-            
-            eval("STRING", "'a'.class.simpleName.trim.toUpperCase", null);
-            eval("STRING", "3.class.simpleName.trim.toUpperCase", null);
         }
 
         {
@@ -204,6 +201,18 @@ public class ExpressionParserTest {
 
         eval("is ok", " 3+3==3*2?'is'+' '+'ok':null", null);
         eval(null, " 3%3!=0?true:null", null);
+        
+        
+        
+        eval(14.0, " 1+3*2+2*3+1", null);
+
+//        // TODO
+//        eval("STRING", "'a'.class.simpleName.trim.toUpperCase", null);
+//        eval("INTEGER", "3.class.simpleName.trim.toUpperCase", null);
+//
+//        // TODO
+//        eval("STRING", "'a'->getClass()->getSimpleName()->trim()->toUpperCase()", null);
+//        eval("INTEGER", "3.class.simpleName.trim.toUpperCase", null);
 
         {
             String exp = " long(c1 ? (c2?1:2) : (c3?3:4))";

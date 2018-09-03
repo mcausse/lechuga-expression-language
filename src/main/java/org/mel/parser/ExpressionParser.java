@@ -29,34 +29,11 @@ import org.mel.tokenizer.TokenIterator;
 //*      <op-muldivmod>     ::= "*" | "/" | "%"
 //*      <unary-op>         ::= "not" | "byte" | "short" | "int" | "long" |
 //*                             "float" | "double" | "string" | "keys" | "typeof" | "-"
-//*
+//*     
 //*     TODO crides a funcions!
-//*     <method-call> ::= <exp> "->" IDENT "(" [ <exp> {"," <exp>}] ")"
-//*
-//*
-//*
-//*
-//*
-//*
-//*
-//*     <exp55> ::= <exp6> { "(" [ <exp> {"," <exp>}] ")" }
-//*
-//*
-//*     {x,y=>x*y}(2,3)
-//*     <closure> ::= "{" [IDENT {"," IDENT}] "=>" <exp> "}"
-//*
-//*
-//*     3->intValue()
-//*
-//*
-//*
+//*     <method-call> ::= <exp-k> "->" IDENT "(" [ <exp> {"," <exp>}] ")"
+
 public class ExpressionParser {
-
-    public static interface Ast {
-        Object evaluate(Map<String, Object> model);
-
-        SourceRef getSourceRef();
-    }
 
     public Ast parseExpression(List<Token> expressionTokens) {
         if (expressionTokens.isEmpty()) {
@@ -67,7 +44,7 @@ public class ExpressionParser {
         try {
             Ast r = parseExpression(i);
             if (i.notEof()) {
-                throw new RuntimeException("grammar exception: EOF not reached at the end of expression: "+r);
+                throw new RuntimeException("grammar exception: EOF not reached at the end of expression: " + r);
             }
             return r;
         } catch (Exception e) {
