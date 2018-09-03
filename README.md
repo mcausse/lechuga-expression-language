@@ -34,7 +34,6 @@ Model | Expression | Result
  |  | int(1+1) | 2
  |  | (int 1)+1 | 2.0
  |  | (int 1)+int 1 | 2
- |  | (int 3.14159) | 3
  |  | (int(3.14159)) | 3
  |  | (int(3.14159*100)) | 314
  |  | -1+-1 | -2.0
@@ -62,6 +61,10 @@ Model | Expression | Result
  |  | ''?'ok':'ko' | ko
  |  | 3+3==3*2?'is'+' '+'ok':null | is ok
  |  | 3%3!=0?true:null | null
+ |  | 3->intValue() | 3
+ |  | 3->floatValue() | 3.0
+ |  | 'abcdefg'->substring(int 2, int 5) | cde
+ |  | 1+3*2+2*3+1 | 14.0
  | {c3=true, c1=true, c2=true} | long(c1 ? (c2?1:2) : (c3?3:4)) | 1
  | {c3=true, c1=true, c2=false} | long(c1 ? (c2?1:2) : (c3?3:4)) | 2
  | {c3=true, c1=false, c2=false} | long(c1 ? (c2?1:2) : (c3?3:4)) | 3
@@ -69,5 +72,5 @@ Model | Expression | Result
  | {a={b=jou!}} | a['b'] | jou!
  | {a={b=jou!}} | a.b | jou!
  | {a={b=jou!}} | keys a | [b]
- | {a=[[Ljava.lang.Integer;@433c675d} | a[1][0] | 3
- | {a=[[Ljava.lang.Integer;@433c675d} | keys a | [0, 1]
+ | {a=[[Ljava.lang.Integer;@1a6c5a9e} | a[1][0] | 3
+ | {a=[[Ljava.lang.Integer;@1a6c5a9e} | keys a | [0, 1]

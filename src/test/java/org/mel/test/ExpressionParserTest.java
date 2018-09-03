@@ -170,7 +170,6 @@ public class ExpressionParserTest {
         eval(2, "int(1+1)", null);
         eval(2.0, "(int 1)+1", null);
         eval(2, "(int 1)+int 1", null);
-        eval(3, "(int 3.14159)", null);
         eval(3, "(int(3.14159))", null);
         eval(314, "(int(3.14159*100))", null);
         eval(-2.0, "-1+-1", null);
@@ -201,18 +200,22 @@ public class ExpressionParserTest {
 
         eval("is ok", " 3+3==3*2?'is'+' '+'ok':null", null);
         eval(null, " 3%3!=0?true:null", null);
-        
-        
-        
+
+        eval(3, "3->intValue()", null);
+        eval(3.0f, "3->floatValue()", null);
+        eval("cde", "'abcdefg'->substring(int 2, int 5)", null);
+        assertEquals("cde", "abcdefg".substring(2, 5));
+
         eval(14.0, " 1+3*2+2*3+1", null);
 
-//        // TODO
-//        eval("STRING", "'a'.class.simpleName.trim.toUpperCase", null);
-//        eval("INTEGER", "3.class.simpleName.trim.toUpperCase", null);
-//
-//        // TODO
-//        eval("STRING", "'a'->getClass()->getSimpleName()->trim()->toUpperCase()", null);
-//        eval("INTEGER", "3.class.simpleName.trim.toUpperCase", null);
+        // // TODO
+        // eval("STRING", "'a'.class.simpleName.trim.toUpperCase", null);
+        // eval("INTEGER", "3.class.simpleName.trim.toUpperCase", null);
+        //
+        // // TODO
+        // eval("STRING", "'a'->getClass()->getSimpleName()->trim()->toUpperCase()",
+        // null);
+        // eval("INTEGER", "3.class.simpleName.trim.toUpperCase", null);
 
         {
             String exp = " long(c1 ? (c2?1:2) : (c3?3:4))";

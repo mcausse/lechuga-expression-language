@@ -113,8 +113,8 @@ public class ExpressionTokenizer {
                     }
                 }
                 {
-                    List<Character> cs1 = Arrays.asList('.', '+', '-', '*', '/', '%', '>', '<', '?', ':');
-                    List<String> cs2 = Arrays.asList("==", "!=", "<>", ">=", "<=", "&&", "||", "/*", "*/");
+                    List<Character> cs1 = Arrays.asList(',', '.', '+', '-', '*', '/', '%', '>', '<', '?', ':');
+                    List<String> cs2 = Arrays.asList("==", "!=", "<>", ">=", "<=", "&&", "||", "/*", "*/", "->");
 
                     if (i + 1 < text.length()) {
                         String c2 = text.substring(i, i + 2);
@@ -157,7 +157,7 @@ public class ExpressionTokenizer {
             }
 
                 throw new TokenException(new SourceRef(sourceFile, openingLine, openingColumn),
-                        "unexpected: '" + text.charAt(i));
+                        "unexpected: '" + text.charAt(i) + "'");
             }
         }
 

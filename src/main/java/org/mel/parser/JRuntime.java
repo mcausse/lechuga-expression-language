@@ -20,6 +20,28 @@ public class JRuntime {
         return r.getClass().getSimpleName();
     }
 
+    public static Object invokeFunc(Object o, String methodName, List<Object> args) {
+
+        for (Method m : o.getClass().getMethods()) {
+            if (m.getName().equals(methodName) && m.getParameterTypes().length == args.size()) {
+
+                Object r;
+                try {
+                    r = m.invoke(o, args.toArray(new Object[] {}));
+                } catch (Exception e) {
+                    throw new RuntimeException("error in method call: " + String.valueOf(o) + "#" + methodName + args);
+                }
+
+                if (m.getReturnType() == void.class) {
+                    return o;
+                } else {
+                    return r;
+                }
+            }
+        }
+        throw new RuntimeException("method not found: " + String.valueOf(o) + "#" + methodName + args);
+    }
+
     @SuppressWarnings({ "rawtypes" })
     public static Collection<?> toKeysList(Object elements) {
         if (elements == null) {
