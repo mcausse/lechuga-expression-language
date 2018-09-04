@@ -11,26 +11,6 @@ import org.mel.tokenizer.Token;
 import org.mel.tokenizer.TokenException;
 import org.mel.tokenizer.TokenIterator;
 
-//*      <exp>       ::= <expTern> "->" IDENT "(" [ <exp> {"," <exp>}] ")"
-//*      <expTern>   ::= <exp0> ["?" <exp0> ":" <exp0>]                                   (menys prioritari!)
-//*      <exp0> ::= <exp1> {<op-or> <exp1>}
-//*      <exp1> ::= <exp2> {<op-and> <exp2>}
-//*      <exp2> ::= <exp3> [<op-relational> <exp3>]
-//*      <exp3> ::= <exp4> {<op-addsub> <exp4>}
-//*      <exp4> ::= <exp5> {<op-muldivmod> <exp5>}
-//*      <exp5> ::= {<unary-op>} <exp6>
-//*      <exp6> ::= <expN> {"[" <exp> "]"}
-//*      <expN> ::= "(" <exp> ")" | <var> | NUM | STRING | BOOL | "null"
-//*      <var>  ::= IDENT {"." IDENT}
-//*
-//*      <op-or>            ::= "or" | "||"
-//*      <op-and>           ::= "and" | "&&"
-//*      <op-relational>    ::= "eq" | "==" | "ne" | "!=" | "le" | "<=" | "ge" | ">=" | "lt" | "<" | "gt" | ">"
-//*      <op-addsub>        ::= "+" | "-"
-//*      <op-muldivmod>     ::= "*" | "/" | "%"
-//*      <unary-op>         ::= "not" | "byte" | "short" | "int" | "long" |
-//*                             "float" | "double" | "string" | "keys" | "typeof" | "-"
-//*
 //*      <exp>  ::= <exp0> ["?" <exp0> ":" <exp0>]                                   (menys prioritari!)
 //*      <exp0> ::= <exp1> {<op-or> <exp1>}
 //*      <exp1> ::= <exp2> {<op-and> <exp2>}
@@ -42,6 +22,15 @@ import org.mel.tokenizer.TokenIterator;
 //*      <exp7> ::= <expN> "->" IDENT "(" [ <exp> {"," <exp>}] ")"
 //*      <expN> ::= "(" <exp> ")" | <var> | NUM | STRING | BOOL | "null"
 //*      <var>  ::= IDENT {"." IDENT}
+//*
+//*      <op-or>            ::= "or" | "||"
+//*      <op-and>           ::= "and" | "&&"
+//*      <op-relational>    ::= "eq" | "==" | "ne" | "!=" | "le" | "<=" | "ge" | ">=" | "lt" | "<" | "gt" | ">"
+//*      <op-addsub>        ::= "+" | "-"
+//*      <op-muldivmod>     ::= "*" | "/" | "%"
+//*      <unary-op>         ::= "not" | "byte" | "short" | "int" | "long" |
+//*                             "float" | "double" | "string" | "keys" | "typeof" | "-"
+//*
 //*
 //*
 //*
@@ -339,6 +328,9 @@ public class ExpressionParser {
         case OPEN_PARENTESIS: {
             i.next();// chupa (
             Ast r = parseExpression(i);
+            if (i.current().getType() != EToken.CLOSE_PARENTESIS) {
+                throw new RuntimeException("expected )");
+            }
             i.next();// chupa )
             return r;
         }
