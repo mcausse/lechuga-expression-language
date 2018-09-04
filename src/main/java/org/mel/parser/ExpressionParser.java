@@ -13,7 +13,6 @@ import org.mel.tokenizer.TokenIterator;
 
 //*      <exp>       ::= <expTern> "->" IDENT "(" [ <exp> {"," <exp>}] ")"
 //*      <expTern>   ::= <exp0> ["?" <exp0> ":" <exp0>]                                   (menys prioritari!)
-//*      <exp0>      ::= <exp1> {<op-or> <exp1>}
 //*      <exp0> ::= <exp1> {<op-or> <exp1>}
 //*      <exp1> ::= <exp2> {<op-and> <exp2>}
 //*      <exp2> ::= <exp3> [<op-relational> <exp3>]
@@ -31,6 +30,20 @@ import org.mel.tokenizer.TokenIterator;
 //*      <op-muldivmod>     ::= "*" | "/" | "%"
 //*      <unary-op>         ::= "not" | "byte" | "short" | "int" | "long" |
 //*                             "float" | "double" | "string" | "keys" | "typeof" | "-"
+//*
+//*      <exp>  ::= <exp0> ["?" <exp0> ":" <exp0>]                                   (menys prioritari!)
+//*      <exp0> ::= <exp1> {<op-or> <exp1>}
+//*      <exp1> ::= <exp2> {<op-and> <exp2>}
+//*      <exp2> ::= <exp3> [<op-relational> <exp3>]
+//*      <exp3> ::= <exp4> {<op-addsub> <exp4>}
+//*      <exp4> ::= <exp5> {<op-muldivmod> <exp5>}
+//*      <exp5> ::= {<unary-op>} <exp6>
+//*      <exp6> ::= <expN> {"[" <exp> "]"}
+//*      <exp7> ::= <expN> "->" IDENT "(" [ <exp> {"," <exp>}] ")"
+//*      <expN> ::= "(" <exp> ")" | <var> | NUM | STRING | BOOL | "null"
+//*      <var>  ::= IDENT {"." IDENT}
+//*
+//*
 //*
 public class ExpressionParser {
 
@@ -52,74 +65,10 @@ public class ExpressionParser {
     }
 
     public Ast parseExpression(TokenIterator<Token> i) {
-        return parseExpAst(i);
+        return parseExp(i);
     }
 
-    protected Ast parseExpAst(TokenIterator<Token> i) {
-        Ast left = parseExpTernAst(i);
-
-        if (i.hasNext() && i.current().getType() == EToken.SYM && i.current().getValue().equals("->")) {
-            i.next(); // chupa ->
-            if (i.hasNext() && i.current().getType() == EToken.SYM) {
-                String ident = (String) i.current().getValue();
-                i.next(); // chupa ident
-                if (i.hasNext() && i.current().getType() == EToken.OPEN_PARENTESIS) {
-                    i.next(); // chupa (
-                    List<Ast> args = new ArrayList<>();
-                    if (i.current().getType() == EToken.CLOSE_PARENTESIS) {
-                        i.next(); // chupa )
-                    } else {
-                        args.add(parseExpression(i));
-                        while (i.hasNext() && i.current().getType() == EToken.SYM
-                                && i.current().getValue().equals(",")) {
-                            i.next(); // chupa ,
-                            args.add(parseExpression(i));
-                        }
-                        if (i.current().getType() != EToken.CLOSE_PARENTESIS) {
-                            throw new RuntimeException("expected ) " + i.current());
-                        }
-                        i.next(); // chupa )
-                    }
-                    return new FunctionCallAst(left, ident, args);
-                }
-                throw new RuntimeException("syntax error on function call" + i.current());
-            }
-        }
-
-        return left;
-    }
-
-    static class FunctionCallAst implements Ast {
-
-        final Ast left;
-        final String methodName;
-        final List<Ast> args;
-
-        public FunctionCallAst(Ast left, String methodName, List<Ast> args) {
-            super();
-            this.left = left;
-            this.methodName = methodName;
-            this.args = args;
-        }
-
-        @Override
-        public Object evaluate(Map<String, Object> model) {
-            Object o = left.evaluate(model);
-            List<Object> argValues = new ArrayList<>();
-            for (Ast a : args) {
-                argValues.add(a.evaluate(model));
-            }
-            return JRuntime.invokeFunc(o, methodName, argValues);
-        }
-
-        @Override
-        public SourceRef getSourceRef() {
-            return left.getSourceRef();
-        }
-
-    }
-
-    protected Ast parseExpTernAst(TokenIterator<Token> i) {
+    protected Ast parseExp(TokenIterator<Token> i) {
         Ast r = parseExp0Ast(i);
         if (i.hasNext() && i.current().getType() == EToken.SYM && i.current().getValue().equals("?")) {
             i.next(); // chupa ?
@@ -283,7 +232,7 @@ public class ExpressionParser {
     }
 
     protected Ast parseExp6Ast(TokenIterator<Token> i) {
-        Ast left = parseExpNAst(i);
+        Ast left = parseExp7Ast(i);
         List<Ast> right = new ArrayList<>();
         while (i.hasNext() && i.current().getType() == EToken.OPEN_CLAU) {
             i.next(); // chupa [
@@ -301,6 +250,87 @@ public class ExpressionParser {
             return left;
         }
         return new Exp6Ast(left, right);
+    }
+
+    protected Ast parseExp7Ast(TokenIterator<Token> i) {
+        Ast left = parseExpNAst(i);
+        List<FunctionCall> calls = new ArrayList<>();
+
+        while (i.hasNext() && i.current().getType() == EToken.SYM && i.current().getValue().equals("->")) {
+            i.next(); // chupa ->
+            if (i.hasNext() && i.current().getType() == EToken.SYM) {
+                String methodName = (String) i.current().getValue();
+                i.next(); // chupa ident
+                if (i.hasNext() && i.current().getType() == EToken.OPEN_PARENTESIS) {
+                    i.next(); // chupa (
+                    List<Ast> args = new ArrayList<>();
+                    if (i.current().getType() == EToken.CLOSE_PARENTESIS) {
+                        i.next(); // chupa )
+                    } else {
+                        args.add(parseExpression(i));
+                        while (i.hasNext() && i.current().getType() == EToken.SYM
+                                && i.current().getValue().equals(",")) {
+                            i.next(); // chupa ,
+                            args.add(parseExpression(i));
+                        }
+                        if (i.current().getType() != EToken.CLOSE_PARENTESIS) {
+                            throw new RuntimeException("expected ) " + i.current());
+                        }
+                        i.next(); // chupa )
+                    }
+                    calls.add(new FunctionCall(methodName, args));
+                }
+            }
+        }
+
+        if (calls.isEmpty()) {
+            return left;
+        } else {
+            return new FunctionCallAst(left, calls);
+        }
+    }
+
+    class FunctionCall {
+
+        public final String methodName;
+        public final List<Ast> args;
+
+        public FunctionCall(String methodName, List<Ast> args) {
+            super();
+            this.methodName = methodName;
+            this.args = args;
+        }
+    }
+
+    static class FunctionCallAst implements Ast {
+
+        final Ast left;
+        final List<FunctionCall> calls;
+
+        public FunctionCallAst(Ast left, List<FunctionCall> calls) {
+            super();
+            this.left = left;
+            this.calls = calls;
+        }
+
+        @Override
+        public Object evaluate(Map<String, Object> model) {
+            Object o = left.evaluate(model);
+            for (FunctionCall call : calls) {
+                List<Object> argValues = new ArrayList<>();
+                for (Ast a : call.args) {
+                    argValues.add(a.evaluate(model));
+                }
+                o = JRuntime.invokeFunc(o, call.methodName, argValues);
+            }
+            return o;
+        }
+
+        @Override
+        public SourceRef getSourceRef() {
+            return left.getSourceRef();
+        }
+
     }
 
     protected Ast parseExpNAst(TokenIterator<Token> i) {

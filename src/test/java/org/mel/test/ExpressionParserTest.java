@@ -89,7 +89,11 @@ public class ExpressionParserTest {
             System.out.print(" | " + model);
         }
         System.out.print(" | " + expression.trim());
-        System.out.print(" | " + expectedResult);
+        if (expectedResult == null) {
+            System.out.print(" | " + expectedResult);
+        } else {
+            System.out.print(" | " + expectedResult + " (" + expectedResult.getClass().getSimpleName() + ")");
+        }
         System.out.println();
     }
 
@@ -201,21 +205,23 @@ public class ExpressionParserTest {
         eval("is ok", " 3+3==3*2?'is'+' '+'ok':null", null);
         eval(null, " 3%3!=0?true:null", null);
 
-        eval(3, "3->intValue()", null);
-        eval(3.0f, "3->floatValue()", null);
-        eval("cde", "'abcdefg'->substring(int 2, int 5)", null);
-        assertEquals("cde", "abcdefg".substring(2, 5));
-
         eval(14.0, " 1+3*2+2*3+1", null);
 
         // // TODO
         // eval("STRING", "'a'.class.simpleName.trim.toUpperCase", null);
         // eval("INTEGER", "3.class.simpleName.trim.toUpperCase", null);
-        //
-        // // TODO
-        // eval("STRING", "'a'->getClass()->getSimpleName()->trim()->toUpperCase()",
-        // null);
-        // eval("INTEGER", "3.class.simpleName.trim.toUpperCase", null);
+
+        eval(3, "3->intValue()", null);
+        eval(3.0f, "3->floatValue()", null);
+        eval("cde", "'abcdefg'->substring(int 2, int 5)", null);
+        assertEquals("cde", "abcdefg".substring(2, 5));
+
+        eval("STRING", "'a'->getClass()->getSimpleName()->trim()->toUpperCase()", null);
+        eval("INTEGER", "(int 3)->getClass()->getSimpleName()->trim()->toUpperCase()", null);
+
+        eval(6, "3->intValue() * 2->shortValue()", null);
+
+        eval(3f, "(int 3)->floatValue()", null);
 
         {
             String exp = " long(c1 ? (c2?1:2) : (c3?3:4))";

@@ -2,75 +2,79 @@
 
 Model | Expression | Result
 --- | --- | ---
- |  | 1+2*3+4 | 11.0
- |  | 1 eq 1 and (1+1 eq 2 or false) | true
- |  | 1 eq 1 and (1+2 eq 2 or false) | false
- |  | null eq null | true
- |  | 'jou'=='juas' || 'a' == 'a' | true
- |  | not false and not(not true) | true
+ |  | 1+2*3+4 | 11.0 (Double)
+ |  | 1 eq 1 and (1+1 eq 2 or false) | true (Boolean)
+ |  | 1 eq 1 and (1+2 eq 2 or false) | false (Boolean)
+ |  | null eq null | true (Boolean)
+ |  | 'jou'=='juas' || 'a' == 'a' | true (Boolean)
+ |  | not false and not(not true) | true (Boolean)
  |  | null | null
- |  | 'jou' | jou
- |  | long (10/3) | 3
- |  | long 10.9 / long 3.27 | 3
- |  | 10%3==1 | true
- |  | typeof short 3 | Short
- |  | typeof int 3 | Integer
- |  | typeof 3 | Double
- |  | typeof 3.4 | Double
- |  | typeof 'jou' | String
- |  | typeof true | Boolean
- |  | typeof false | Boolean
- |  | typeof null | null
+ |  | 'jou' | jou (String)
+ |  | long (10/3) | 3 (Long)
+ |  | long 10.9 / long 3.27 | 3 (Long)
+ |  | 10%3==1 | true (Boolean)
+ |  | typeof short 3 | Short (String)
+ |  | typeof int 3 | Integer (String)
+ |  | typeof 3 | Double (String)
+ |  | typeof 3.4 | Double (String)
+ |  | typeof 'jou' | String (String)
+ |  | typeof true | Boolean (String)
+ |  | typeof false | Boolean (String)
+ |  | typeof null | null (String)
  |  |  | null
- | {name=mhc} | name | mhc
- | {name=[mhc, mem], i=1} | name[1] | mem
- | {name=[mhc, mem], i=1} | name[i] | mem
- | {name=[mhc, mem], i=1} | 'alo '+name[i/2]+'!' | alo mhc!
- | {name=mhc} | name.class.simpleName.trim.toUpperCase | STRING
- | {age=32} | age>=32&&age<=45 | true
- | {alive=true} | alive&&true | true
- |  | long 1.2 | 1
- |  | int 1 | 1
- |  | int(1+1) | 2
- |  | (int 1)+1 | 2.0
- |  | (int 1)+int 1 | 2
- |  | (int(3.14159)) | 3
- |  | (int(3.14159*100)) | 314
- |  | -1+-1 | -2.0
- |  | 1---1 | 0.0
- |  | -(-(-1)) | -1.0
- |  | ---1 | -1.0
- |  | null eq null | true
- |  | null eq null && true || false==true | true
- |  | 'jou' eq 'jou' | true
- |  | 'jou ' eq 'jou' | false
- |  | 'jou' | jou
- |  | 'jou'+'juas' | joujuas
- |  | short 2 + short 3 | 5
- |  | int 2 + int 3 | 5
- |  | long 2 + long 3 | 5
- |  | float 2 + float 3 | 5.0
- |  | double 2 + double 3 | 5.0
- |  | string int long 3.14159 | 3
- |  | null?'ok':'ko' | ko
- |  | true?'ok':'ko' | ok
- |  | false?'ok':'ko' | ko
- |  | 1?'ok':'ko' | ok
- |  | 0?'ok':'ko' | ko
- |  | 'a'?'ok':'ko' | ok
- |  | ''?'ok':'ko' | ko
- |  | 3+3==3*2?'is'+' '+'ok':null | is ok
+ | {name=mhc} | name | mhc (String)
+ | {name=[mhc, mem], i=1} | name[1] | mem (String)
+ | {name=[mhc, mem], i=1} | name[i] | mem (String)
+ | {name=[mhc, mem], i=1} | 'alo '+name[i/2]+'!' | alo mhc! (String)
+ | {name=mhc} | name.class.simpleName.trim.toUpperCase | STRING (String)
+ | {age=32} | age>=32&&age<=45 | true (Boolean)
+ | {alive=true} | alive&&true | true (Boolean)
+ |  | long 1.2 | 1 (Long)
+ |  | int 1 | 1 (Integer)
+ |  | int(1+1) | 2 (Integer)
+ |  | (int 1)+1 | 2.0 (Double)
+ |  | (int 1)+int 1 | 2 (Integer)
+ |  | (int(3.14159)) | 3 (Integer)
+ |  | (int(3.14159*100)) | 314 (Integer)
+ |  | -1+-1 | -2.0 (Double)
+ |  | 1---1 | 0.0 (Double)
+ |  | -(-(-1)) | -1.0 (Double)
+ |  | ---1 | -1.0 (Double)
+ |  | null eq null | true (Boolean)
+ |  | null eq null && true || false==true | true (Boolean)
+ |  | 'jou' eq 'jou' | true (Boolean)
+ |  | 'jou ' eq 'jou' | false (Boolean)
+ |  | 'jou' | jou (String)
+ |  | 'jou'+'juas' | joujuas (String)
+ |  | short 2 + short 3 | 5 (Short)
+ |  | int 2 + int 3 | 5 (Integer)
+ |  | long 2 + long 3 | 5 (Long)
+ |  | float 2 + float 3 | 5.0 (Float)
+ |  | double 2 + double 3 | 5.0 (Double)
+ |  | string int long 3.14159 | 3 (String)
+ |  | null?'ok':'ko' | ko (String)
+ |  | true?'ok':'ko' | ok (String)
+ |  | false?'ok':'ko' | ko (String)
+ |  | 1?'ok':'ko' | ok (String)
+ |  | 0?'ok':'ko' | ko (String)
+ |  | 'a'?'ok':'ko' | ok (String)
+ |  | ''?'ok':'ko' | ko (String)
+ |  | 3+3==3*2?'is'+' '+'ok':null | is ok (String)
  |  | 3%3!=0?true:null | null
- |  | 3->intValue() | 3
- |  | 3->floatValue() | 3.0
- |  | 'abcdefg'->substring(int 2, int 5) | cde
- |  | 1+3*2+2*3+1 | 14.0
- | {c3=true, c1=true, c2=true} | long(c1 ? (c2?1:2) : (c3?3:4)) | 1
- | {c3=true, c1=true, c2=false} | long(c1 ? (c2?1:2) : (c3?3:4)) | 2
- | {c3=true, c1=false, c2=false} | long(c1 ? (c2?1:2) : (c3?3:4)) | 3
- | {c3=false, c1=false, c2=false} | long(c1 ? (c2?1:2) : (c3?3:4)) | 4
- | {a={b=jou!}} | a['b'] | jou!
- | {a={b=jou!}} | a.b | jou!
- | {a={b=jou!}} | keys a | [b]
- | {a=[[Ljava.lang.Integer;@1a6c5a9e} | a[1][0] | 3
- | {a=[[Ljava.lang.Integer;@1a6c5a9e} | keys a | [0, 1]
+ |  | 1+3*2+2*3+1 | 14.0 (Double)
+ |  | 3->intValue() | 3 (Integer)
+ |  | 3->floatValue() | 3.0 (Float)
+ |  | 'abcdefg'->substring(int 2, int 5) | cde (String)
+ |  | 'a'->getClass()->getSimpleName()->trim()->toUpperCase() | STRING (String)
+ |  | (int 3)->getClass()->getSimpleName()->trim()->toUpperCase() | INTEGER (String)
+ |  | 3->intValue() * 2->shortValue() | 6 (Integer)
+ |  | (int 3)->floatValue() | 3.0 (Float)
+ | {c3=true, c1=true, c2=true} | long(c1 ? (c2?1:2) : (c3?3:4)) | 1 (Long)
+ | {c3=true, c1=true, c2=false} | long(c1 ? (c2?1:2) : (c3?3:4)) | 2 (Long)
+ | {c3=true, c1=false, c2=false} | long(c1 ? (c2?1:2) : (c3?3:4)) | 3 (Long)
+ | {c3=false, c1=false, c2=false} | long(c1 ? (c2?1:2) : (c3?3:4)) | 4 (Long)
+ | {a={b=jou!}} | a['b'] | jou! (String)
+ | {a={b=jou!}} | a.b | jou! (String)
+ | {a={b=jou!}} | keys a | [b] (KeySet)
+ | {a=[[Ljava.lang.Integer;@5d099f62} | a[1][0] | 3 (Integer)
+ | {a=[[Ljava.lang.Integer;@5d099f62} | keys a | [0, 1] (ArrayList)
