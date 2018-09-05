@@ -1,15 +1,21 @@
 package org.mel.test;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import org.junit.Test;
 
@@ -27,6 +33,17 @@ public class QWERTYU2 {
             Pizza_ p_ = new Pizza_("p");
             System.out.println(p_.getAliasedName());
             System.out.println(p_.price.getAliasedName());
+            
+            
+            System.out.println(p_.name.ilike(ELike.CONTAINS, "alo"));
+        }
+        {
+
+            Operations o = new Operations();
+            Pizza romana = new Pizza(100L, "romana", 12.5, EPizzaType.DELUX);
+            System.out.println(o.insert(new Pizza_(), romana));
+            System.out.println(o.update(new Pizza_(), romana));
+            System.out.println(o.delete(new Pizza_(), romana));
         }
     }
 
@@ -91,12 +108,87 @@ public class QWERTYU2 {
         }
     }
 
+    public static class Operations {
+
+        public <E> IQueryObject insert(Table<E> table, E entity) {
+            QueryObject q = new QueryObject();
+            q.append("insert into ");
+            q.append(table.getTableName());
+            q.append(" (");
+            {
+                StringJoiner j = new StringJoiner(", ");
+                for (Column<E, ?> c : table.getColumns()) {
+                    j.add(c.getColumnName());
+                }
+                q.append(j.toString());
+            }
+            q.append(") values (");
+            {
+                StringJoiner j = new StringJoiner(", ");
+                for (Column<E, ?> c : table.getColumns()) {
+                    j.add("?");
+                    q.addArg(c.storeValue(entity));
+                }
+                q.append(j.toString());
+            }
+            q.append(")");
+            return q;
+        }
+
+        public <E> IQueryObject update(Table<E> table, E entity) {
+            QueryObject q = new QueryObject();
+            q.append("update ");
+            q.append(table.getTableName());
+            q.append(" set ");
+            {
+                StringJoiner j = new StringJoiner(", ");
+                for (Column<E, ?> c : table.getColumns()) {
+                    if (!c.isPk) {
+                        j.add(c.getColumnName() + "=?");
+                        q.addArg(c.storeValue(entity));
+                    }
+                }
+                q.append(j.toString());
+            }
+            q.append(" where ");
+            {
+                StringJoiner j = new StringJoiner(" and ");
+                for (Column<E, ?> c : table.getColumns()) {
+                    if (c.isPk) {
+                        j.add(c.getColumnName() + "=?");
+                        q.addArg(c.storeValue(entity));
+                    }
+                }
+                q.append(j.toString());
+            }
+            return q;
+        }
+
+        public <E> IQueryObject delete(Table<E> table, E entity) {
+            QueryObject q = new QueryObject();
+            q.append("delete from ");
+            q.append(table.getTableName());
+            q.append(" where ");
+            {
+                StringJoiner j = new StringJoiner(" and ");
+                for (Column<E, ?> c : table.getColumns()) {
+                    if (c.isPk) {
+                        j.add(c.getColumnName() + "=?");
+                        q.addArg(c.storeValue(entity));
+                    }
+                }
+                q.append(j.toString());
+            }
+            return q;
+        }
+    }
+
     public static class Pizza_ extends Table<Pizza> {
 
-        public final Column<Pizza, Long> id = addPkColumn(Long.class, "id_pizza");
-        public final Column<Pizza, String> name = addColumn(String.class, "name");
-        public final Column<Pizza, Double> price = addColumn(Double.class, "price");
-        public final Column<Pizza, EPizzaType> type = addColumn(EPizzaType.class, "type",
+        public final Column<Pizza, Long> id = addPkColumn(Long.class, "idPizza", "id_pizza");
+        public final Column<Pizza, String> name = addColumn(String.class, "name", "name");
+        public final Column<Pizza, Double> price = addColumn(Double.class, "price", "price");
+        public final Column<Pizza, EPizzaType> type = addColumn(EPizzaType.class, "type", "type",
                 new EnumColumnHandler<>(EPizzaType.class));
 
         public Pizza_() {
@@ -131,26 +223,30 @@ public class QWERTYU2 {
             this(entityClass, tableName, null);
         }
 
-        protected <T> Column<E, T> addColumn(Class<T> columnClass, String columnName) {
-            Column<E, T> c = new Column<>(this, columnClass, columnName, false, Handlers.getHandlerFor(columnClass));
+        protected <T> Column<E, T> addColumn(Class<T> columnClass, String propertyPath, String columnName) {
+            Column<E, T> c = new Column<>(this, columnClass, propertyPath, columnName, false,
+                    Handlers.getHandlerFor(columnClass));
             this.columns.add(c);
             return c;
         }
 
-        protected <T> Column<E, T> addPkColumn(Class<T> columnClass, String columnName) {
-            Column<E, T> c = new Column<>(this, columnClass, columnName, true, Handlers.getHandlerFor(columnClass));
+        protected <T> Column<E, T> addPkColumn(Class<T> columnClass, String propertyPath, String columnName) {
+            Column<E, T> c = new Column<>(this, columnClass, propertyPath, columnName, true,
+                    Handlers.getHandlerFor(columnClass));
             this.columns.add(c);
             return c;
         }
 
-        protected <T> Column<E, T> addColumn(Class<T> columnClass, String columnName, ColumnHandler<T> handler) {
-            Column<E, T> c = new Column<>(this, columnClass, columnName, false, handler);
+        protected <T> Column<E, T> addColumn(Class<T> columnClass, String propertyPath, String columnName,
+                ColumnHandler<T> handler) {
+            Column<E, T> c = new Column<>(this, columnClass, propertyPath, columnName, false, handler);
             this.columns.add(c);
             return c;
         }
 
-        protected <T> Column<E, T> addPkColumn(Class<T> columnClass, String columnName, ColumnHandler<T> handler) {
-            Column<E, T> c = new Column<>(this, columnClass, columnName, true, handler);
+        protected <T> Column<E, T> addPkColumn(Class<T> columnClass, String propertyPath, String columnName,
+                ColumnHandler<T> handler) {
+            Column<E, T> c = new Column<>(this, columnClass, propertyPath, columnName, true, handler);
             this.columns.add(c);
             return c;
         }
@@ -187,15 +283,21 @@ public class QWERTYU2 {
         final String columnName;
         final boolean isPk;
         final ColumnHandler<T> handler;
+        final Accessor accessor;
 
-        public Column(Table<E> parentTable, Class<T> columnClass, String columnName, boolean isPk,
+        public Column(Table<E> parentTable, Class<T> columnClass, String propertyPath, String columnName, boolean isPk,
                 ColumnHandler<T> handler) {
             super();
             this.parentTable = parentTable;
             this.columnClass = columnClass;
+            this.accessor = new Accessor(parentTable.getEntityClass(), propertyPath);
             this.columnName = columnName;
             this.isPk = isPk;
             this.handler = handler;
+        }
+
+        public String getColumnName() {
+            return columnName;
         }
 
         @Override
@@ -206,6 +308,161 @@ public class QWERTYU2 {
                 return parentTable.getAlias() + "." + columnName;
             }
         }
+
+        public void loadValue(E entity, ResultSet rs) throws SQLException {
+            T value = handler.readValue(rs, columnName);
+            accessor.set(entity, value);
+        }
+
+        @SuppressWarnings("unchecked")
+        public Object storeValue(E entity) {
+            T value = (T) accessor.get(entity);
+            return handler.getJdbcValue(value);
+        }
+
+        protected IQueryObject binaryOp(String op, T value) {
+            QueryObject q = new QueryObject();
+            q.append(getColumnName());
+            q.append(op);
+            q.append("?");
+            q.addArg(handler.getJdbcValue(value));
+            return q;
+        }
+
+        public IQueryObject eq(T value) {
+            return binaryOp("=", value);
+        }
+
+        public IQueryObject ne(T value) {
+            return binaryOp("<>", value);
+        }
+
+        public IQueryObject lt(T value) {
+            return binaryOp("<", value);
+        }
+
+        public IQueryObject gt(T value) {
+            return binaryOp(">", value);
+        }
+
+        public IQueryObject le(T value) {
+            return binaryOp("<=", value);
+        }
+
+        public IQueryObject ge(T value) {
+            return binaryOp(">=", value);
+        }
+
+        //
+
+        protected IQueryObject binaryOp(String op, Column<?, T> c) {
+            QueryObject q = new QueryObject();
+            q.append(getColumnName());
+            q.append(op);
+            q.append(c.getColumnName());
+            return q;
+        }
+
+        public IQueryObject eq(Column<?, T> c) {
+            return binaryOp("=", c);
+        }
+
+        public IQueryObject ne(Column<?, T> c) {
+            return binaryOp("<>", c);
+        }
+
+        public IQueryObject lt(Column<?, T> c) {
+            return binaryOp("<", c);
+        }
+
+        public IQueryObject gt(Column<?, T> c) {
+            return binaryOp(">", c);
+        }
+
+        public IQueryObject le(Column<?, T> c) {
+            return binaryOp("<=", c);
+        }
+
+        public IQueryObject ge(Column<?, T> c) {
+            return binaryOp(">=", c);
+        }
+
+        //
+
+        protected IQueryObject unaryOp(String prefix, String postfix) {
+            QueryObject q = new QueryObject();
+            q.append(prefix);
+            q.append(getColumnName());
+            q.append(postfix);
+            return q;
+        }
+
+        public IQueryObject isNull() {
+            return unaryOp("", " IS NULL");
+        }
+
+        public IQueryObject isNotNull() {
+            return unaryOp("", " IS NOT NULL");
+        }
+
+        //
+
+        public IQueryObject in(List<T> values) {
+
+            QueryObject r = new QueryObject();
+            r.append(getColumnName());
+            r.append(" in (");
+            for (int i = 0; i < values.size(); i++) {
+                if (i > 0) {
+                    r.append(",");
+                }
+                r.append("?");
+                r.addArg(handler.getJdbcValue(values.get(i)));
+            }
+            r.append(")");
+            return r;
+        }
+
+        @SuppressWarnings("unchecked")
+        public IQueryObject in(T... values) {
+            return in(Arrays.asList(values));
+        }
+
+        public IQueryObject notIn(List<T> values) {
+            return Relational.not(in(values));
+        }
+
+        @SuppressWarnings("unchecked")
+        public IQueryObject notIn(T... values) {
+            return Relational.not(in(Arrays.asList(values)));
+        }
+
+        public IQueryObject between(T value1, T value2) {
+            QueryObject r = new QueryObject();
+            r.append(getColumnName());
+            r.append(" between ? and ?");
+            r.addArg(handler.getJdbcValue(value1));
+            r.addArg(handler.getJdbcValue(value2));
+            return r;
+        }
+
+        public IQueryObject like(ELike like, String value) {
+            QueryObject r = new QueryObject();
+            r.append(getColumnName());
+            r.append(" like ?");
+            r.addArg(like.process(value));
+            return r;
+        }
+
+        public IQueryObject ilike(ELike like, String value) {
+            QueryObject r = new QueryObject();
+            r.append("upper(");
+            r.append(getColumnName());
+            r.append(") like upper(?)");
+            r.addArg(like.process(value));
+            return r;
+        }
+
     }
 
     public static interface ColumnHandler<T> {
@@ -572,4 +829,194 @@ class QueryObjectUtils {
         return r.toString();
     }
 
+}
+
+class Accessor {
+
+    protected final Class<?> beanClass;
+    // id.login
+    protected final String propertyPath;
+    protected final String[] propertyNameParts;
+    protected final List<PropertyDescriptor> propertyPathList = new ArrayList<>();
+
+    public Accessor(Class<?> beanClass, String propertyPath) {
+        super();
+        this.propertyPath = propertyPath;
+        this.beanClass = beanClass;
+        this.propertyNameParts = propertyPath.split("\\.");
+
+        try {
+            Class<?> c = beanClass;
+            for (String part : propertyNameParts) {
+                PropertyDescriptor pd = findProp(c, part);
+                this.propertyPathList.add(pd);
+                c = pd.getPropertyType();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("describing " + beanClass.getName() + "#" + propertyPath, e);
+        }
+    }
+
+    protected static PropertyDescriptor findProp(Class<?> beanClass, String propertyName) {
+        BeanInfo info;
+        try {
+            info = Introspector.getBeanInfo(beanClass);
+        } catch (IntrospectionException e) {
+            throw new RuntimeException("describing " + beanClass.getName(), e);
+        }
+        PropertyDescriptor[] pds = info.getPropertyDescriptors();
+        for (PropertyDescriptor pd : pds) {
+            if (pd.getName().equals("class") || pd.getName().contains("$")) {
+                continue;
+            }
+            if (pd.getName().equals(propertyName)) {
+                return pd;
+            }
+        }
+        throw new RuntimeException("property not found: '" + beanClass.getName() + "#" + propertyName + "'");
+    }
+
+    public Object get(Object bean) {
+        return get(bean, 0);
+    }
+
+    public void set(Object bean, Object propertyValue) {
+        set(bean, 0, propertyValue);
+    }
+
+    public Object get(Object bean, int startIndex) {
+        try {
+            Object o = bean;
+            for (int i = startIndex; i < propertyPathList.size(); i++) {
+                o = propertyPathList.get(i).getReadMethod().invoke(o);
+                if (o == null) {
+                    return null;
+                }
+            }
+            return o;
+        } catch (Exception e) {
+            throw new RuntimeException(this.beanClass.getName() + "#" + this.propertyPath + " for instance: " + bean,
+                    e);
+        }
+    }
+
+    public void set(Object bean, int startIndex, Object propertyValue) {
+        try {
+            Object o = bean;
+            for (int i = startIndex; i < propertyPathList.size() - 1; i++) {
+                PropertyDescriptor p = propertyPathList.get(i);
+                Object o2 = p.getReadMethod().invoke(o);
+                if (o2 == null) {
+                    o2 = p.getPropertyType().newInstance();
+                    p.getWriteMethod().invoke(o, o2);
+                }
+                o = o2;
+            }
+            propertyPathList.get(propertyPathList.size() - 1).getWriteMethod().invoke(o, propertyValue);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Class<?> getBeanClass() {
+        return beanClass;
+    }
+
+    public String getPropertyName() {
+        return propertyPath;
+    }
+
+    public Class<?> getPropertyFinalType() {
+        return propertyPathList.get(propertyPathList.size() - 1).getPropertyType();
+    }
+
+    @Override
+    public String toString() {
+        return beanClass + "#" + propertyPath;
+    }
+
+}
+
+enum ELike {
+
+    /**
+     * A -- A
+     */
+    EXACT_MATCH(false, false),
+
+    /**
+     * A -- A%
+     */
+    BEGINS_WITH(false, true),
+
+    /**
+     * A -- %A%
+     */
+    CONTAINS(true, true),
+
+    /**
+     * A -- %A
+     */
+    ENDS_WITH(true, false);
+
+    private final boolean beginWithWildchar;
+    private final boolean endsWithWildchar;
+
+    private ELike(final boolean beginWithWildchar, final boolean endsWithWildchar) {
+        this.beginWithWildchar = beginWithWildchar;
+        this.endsWithWildchar = endsWithWildchar;
+    }
+
+    /**
+     * renderitza la "regexp" SQL
+     */
+    public String process(final String value) {
+        String str = value;
+        if (beginWithWildchar) {
+            str = '%' + str;
+        }
+        if (endsWithWildchar) {
+            str = str + '%';
+        }
+        return str;
+    }
+
+}
+
+class Relational {
+
+    protected static IQueryObject composition(String op, List<IQueryObject> qs) {
+        QueryObject r = new QueryObject();
+        for (int i = 0; i < qs.size(); i++) {
+            if (i > 0) {
+                r.append(op);
+            }
+            r.append(qs.get(i));
+        }
+        return r;
+    }
+
+    public static IQueryObject and(List<IQueryObject> qs) {
+        return composition(" and ", qs);
+    }
+
+    public static IQueryObject or(List<IQueryObject> qs) {
+        return composition(" or ", qs);
+    }
+
+    public static IQueryObject and(IQueryObject... qs) {
+        return and(Arrays.asList(qs));
+    }
+
+    public static IQueryObject or(IQueryObject... qs) {
+        return or(Arrays.asList(qs));
+    }
+
+    public static IQueryObject not(IQueryObject q) {
+        QueryObject r = new QueryObject();
+        r.append("not(");
+        r.append(q);
+        r.append(")");
+        return r;
+    }
 }
