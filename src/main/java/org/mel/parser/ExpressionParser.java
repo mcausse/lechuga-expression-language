@@ -32,6 +32,8 @@ import org.mel.tokenizer.TokenIterator;
 //*                             "float" | "double" | "string" | "keys" | "typeof" | "-"
 //*
 //*
+//*      <exp6> ::= <exp7> { "->" IDENT "(" [ <exp> {"," <exp>}] ")" }
+//*      <exp7> ::= <expN> {"[" <exp> "]"}
 //*
 //*
 public class ExpressionParser {
@@ -222,27 +224,6 @@ public class ExpressionParser {
 
     protected Ast parseExp6Ast(TokenIterator<Token> i) {
         Ast left = parseExp7Ast(i);
-        List<Ast> right = new ArrayList<>();
-        while (i.hasNext() && i.current().getType() == EToken.OPEN_CLAU) {
-            i.next(); // chupa [
-
-            right.add(parseExpression(i));
-
-            if (i.current().getType() != EToken.CLOSE_CLAU) {
-                throw new TokenException(i.current().getSourceRef(),
-                        "expected " + EToken.OPEN_CLAU + ", but readed " + i.current());
-            }
-            i.next(); // chupa ]
-        }
-
-        if (right.isEmpty()) {
-            return left;
-        }
-        return new Exp6Ast(left, right);
-    }
-
-    protected Ast parseExp7Ast(TokenIterator<Token> i) {
-        Ast left = parseExpNAst(i);
         List<FunctionCall> calls = new ArrayList<>();
 
         while (i.hasNext() && i.current().getType() == EToken.SYM && i.current().getValue().equals("->")) {
@@ -277,6 +258,27 @@ public class ExpressionParser {
         } else {
             return new FunctionCallAst(left, calls);
         }
+    }
+
+    protected Ast parseExp7Ast(TokenIterator<Token> i) {
+        Ast left = parseExpNAst(i);
+        List<Ast> right = new ArrayList<>();
+        while (i.hasNext() && i.current().getType() == EToken.OPEN_CLAU) {
+            i.next(); // chupa [
+
+            right.add(parseExpression(i));
+
+            if (i.current().getType() != EToken.CLOSE_CLAU) {
+                throw new TokenException(i.current().getSourceRef(),
+                        "expected " + EToken.OPEN_CLAU + ", but readed " + i.current());
+            }
+            i.next(); // chupa ]
+        }
+
+        if (right.isEmpty()) {
+            return left;
+        }
+        return new Exp7Ast(left, right);
     }
 
     class FunctionCall {
@@ -597,12 +599,12 @@ public class ExpressionParser {
 
     }
 
-    public static class Exp6Ast implements Ast {
+    public static class Exp7Ast implements Ast {
 
         final Ast left;
         final List<Ast> right;
 
-        public Exp6Ast(Ast left, List<Ast> right) {
+        public Exp7Ast(Ast left, List<Ast> right) {
             super();
             this.left = left;
             this.right = right;
