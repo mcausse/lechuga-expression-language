@@ -1,5 +1,7 @@
 package org.mel.test;
 
+import static org.junit.Assert.assertEquals;
+
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -26,24 +28,54 @@ public class QWERTYU2 {
 
         {
             Pizza_ p_ = new Pizza_();
-            System.out.println(p_.getAliasedName());
-            System.out.println(p_.price.getAliasedName());
+            assertEquals("pizza", p_.getAliasedName());
+            assertEquals("price", p_.price.getAliasedName());
         }
         {
             Pizza_ p_ = new Pizza_("p");
-            System.out.println(p_.getAliasedName());
-            System.out.println(p_.price.getAliasedName());
-            
-            
-            System.out.println(p_.name.ilike(ELike.CONTAINS, "alo"));
+            assertEquals("pizza p", p_.getAliasedName());
+            assertEquals("p.price", p_.price.getAliasedName());
+
+            IQueryObject q = Relational.and( //
+                    p_.id.eq(100L), //
+                    p_.name.ilike(ELike.CONTAINS, "alo"), //
+                    p_.price.between(5.0, 18.5), //
+                    p_.type.in(EPizzaType.REGULAR, EPizzaType.DELUX) //
+            );
+            assertEquals(
+                    "id_pizza=? and upper(name) like upper(?) and price between ? and ? and type in (?,?) -- [100(Long), %alo%(String), 5.0(Double), 18.5(Double), REGULAR(String), DELUX(String)]",
+                    q.toString());
         }
         {
 
             Operations o = new Operations();
             Pizza romana = new Pizza(100L, "romana", 12.5, EPizzaType.DELUX);
-            System.out.println(o.insert(new Pizza_(), romana));
-            System.out.println(o.update(new Pizza_(), romana));
-            System.out.println(o.delete(new Pizza_(), romana));
+
+            assertEquals(
+                    "insert into pizza (id_pizza, name, price, type) values (?, ?, ?, ?) -- [100(Long), romana(String), 12.5(Double), DELUX(String)]",
+                    o.insert(new Pizza_(), romana).toString());
+            assertEquals(
+                    "update pizza set name=?, price=?, type=? where id_pizza=? -- [romana(String), 12.5(Double), DELUX(String), 100(Long)]",
+                    o.update(new Pizza_(), romana).toString());
+            assertEquals("delete from pizza where id_pizza=? -- [100(Long)]",
+                    o.delete(new Pizza_(), romana).toString());
+        }
+    }
+
+    public static class Pizza_ extends Table<Pizza> {
+
+        public final Column<Pizza, Long> id = addPkColumn(Long.class, "idPizza", "id_pizza");
+        public final Column<Pizza, String> name = addColumn(String.class, "name", "name");
+        public final Column<Pizza, Double> price = addColumn(Double.class, "price", "price");
+        public final Column<Pizza, EPizzaType> type = addColumn(EPizzaType.class, "type", "type",
+                new EnumColumnHandler<>(EPizzaType.class));
+
+        public Pizza_() {
+            super(Pizza.class, "pizza");
+        }
+
+        public Pizza_(String alias) {
+            super(Pizza.class, "pizza", alias);
         }
     }
 
@@ -180,23 +212,6 @@ public class QWERTYU2 {
                 q.append(j.toString());
             }
             return q;
-        }
-    }
-
-    public static class Pizza_ extends Table<Pizza> {
-
-        public final Column<Pizza, Long> id = addPkColumn(Long.class, "idPizza", "id_pizza");
-        public final Column<Pizza, String> name = addColumn(String.class, "name", "name");
-        public final Column<Pizza, Double> price = addColumn(Double.class, "price", "price");
-        public final Column<Pizza, EPizzaType> type = addColumn(EPizzaType.class, "type", "type",
-                new EnumColumnHandler<>(EPizzaType.class));
-
-        public Pizza_() {
-            super(Pizza.class, "pizza");
-        }
-
-        public Pizza_(String alias) {
-            super(Pizza.class, "pizza", alias);
         }
     }
 
