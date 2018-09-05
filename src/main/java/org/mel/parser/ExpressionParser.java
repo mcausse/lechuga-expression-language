@@ -19,7 +19,7 @@ import org.mel.tokenizer.TokenIterator;
 //*      <exp4> ::= <exp5> {<op-muldivmod> <exp5>}
 //*      <exp5> ::= {<unary-op>} <exp6>
 //*      <exp6> ::= <expN> {"[" <exp> "]"}
-//*      <exp7> ::= <expN> "->" IDENT "(" [ <exp> {"," <exp>}] ")"
+//*      <exp7> ::= <expN> { "->" IDENT "(" [ <exp> {"," <exp>}] ")" }
 //*      <expN> ::= "(" <exp> ")" | <var> | NUM | STRING | BOOL | "null"
 //*      <var>  ::= IDENT {"." IDENT}
 //*

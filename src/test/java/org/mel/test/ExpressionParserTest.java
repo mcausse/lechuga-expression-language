@@ -149,11 +149,13 @@ public class ExpressionParserTest {
             eval("mem", "name[1]", model);
             eval("mem", "name[i]", model);
             eval("alo mhc!", "'alo '+name[i/2]+'!'", model);
+            eval("alo mhc!", "'alo '+name[i/2]->toUpperCase()+'!'", model);
         }
         {
             Map<String, Object> model = new HashMap<>();
             model.put("name", "mhc");
             eval("STRING", "name.class.simpleName.trim.toUpperCase", model);
+            eval("STRING", "name.class.simpleName.trim->toUpperCase()", model);
         }
 
         {
