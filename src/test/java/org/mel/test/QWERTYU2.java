@@ -6,7 +6,14 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,7 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import javax.sql.DataSource;
+
+import org.hsqldb.jdbc.JDBCDataSource;
+import org.junit.Before;
 import org.junit.Test;
+import org.mel.test.QWERTYU2.Mapable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Camarades, ha arribat a les meves mans la 4ª edició de l'"Angular Ejamples",
@@ -30,17 +44,74 @@ import org.junit.Test;
  */
 public class QWERTYU2 {
 
+    final DataAccesFacade facade;
+
+    public QWERTYU2() {
+        final JDBCDataSource ds = new JDBCDataSource();
+        ds.setUrl("jdbc:hsqldb:mem:a");
+        ds.setUser("sa");
+        ds.setPassword("");
+        this.facade = new JdbcDataAccesFacade(ds);
+    }
+
+    @Before
+    public void before() {
+        facade.begin();
+        try {
+            SqlScriptExecutor sql = new SqlScriptExecutor(facade);
+            sql.runFromClasspath("films.sql");
+            facade.commit();
+        } catch (Exception e) {
+            facade.rollback();
+            throw e;
+        }
+    }
+
+    @Test
+    public void testReal() throws Exception {
+
+        Operations o = new Operations();
+        facade.begin();
+        try {
+
+            Pizza_ p = new Pizza_();
+
+            Pizza romana = new Pizza(100L, "romana", 12.5, EPizzaType.DELUX);
+            facade.update(o.insert(p, romana));
+
+            romana.setPrice(12.9);
+            assertEquals("Pizza [idPizza=100, name=romana, price=12.9, type=DELUX]", romana.toString());
+            facade.update(o.update(p, romana));
+
+            Query<Pizza> q = o.query(p);
+            q.append("select * from {} where {}", p, p.id.eq(100L));
+            romana = q.getExecutor(facade).loadUnique();
+            assertEquals("Pizza [idPizza=100, name=romana, price=12.9, type=DELUX]", romana.toString());
+
+            assertEquals("[Pizza [idPizza=100, name=romana, price=12.9, type=DELUX]]",
+                    q.getExecutor(facade).load().toString());
+
+            facade.update(o.delete(p, romana));
+            assertEquals("[]", q.getExecutor(facade).load().toString());
+
+            facade.commit();
+        } catch (Exception e) {
+            facade.rollback();
+            throw e;
+        }
+    }
+
     @Test
     public void testName() throws Exception {
 
         {
             Pizza_ p_ = new Pizza_();
-            assertEquals("pizza", p_.getAliasedName());
+            assertEquals("pizzas", p_.getAliasedName());
             assertEquals("price", p_.price.getAliasedName());
         }
         {
             Pizza_ p_ = new Pizza_("p");
-            assertEquals("pizza p", p_.getAliasedName());
+            assertEquals("pizzas p", p_.getAliasedName());
             assertEquals("p.price", p_.price.getAliasedName());
 
             IQueryObject q = Relational.and( //
@@ -50,7 +121,7 @@ public class QWERTYU2 {
                     p_.type.in(EPizzaType.REGULAR, EPizzaType.DELUX) //
             );
             assertEquals(
-                    "id_pizza=? and upper(name) like upper(?) and price between ? and ? and type in (?,?) -- [100(Long), %alo%(String), 5.0(Double), 18.5(Double), REGULAR(String), DELUX(String)]",
+                    "id_pizza=? and upper(name) like upper(?) and price between ? and ? and kind in (?,?) -- [100(Long), %alo%(String), 5.0(Double), 18.5(Double), REGULAR(String), DELUX(String)]",
                     q.toString());
         }
         {
@@ -59,12 +130,12 @@ public class QWERTYU2 {
             Pizza romana = new Pizza(100L, "romana", 12.5, EPizzaType.DELUX);
 
             assertEquals(
-                    "insert into pizza (id_pizza, name, price, type) values (?, ?, ?, ?) -- [100(Long), romana(String), 12.5(Double), DELUX(String)]",
+                    "insert into pizzas (id_pizza, name, price, kind) values (?, ?, ?, ?) -- [100(Long), romana(String), 12.5(Double), DELUX(String)]",
                     o.insert(new Pizza_(), romana).toString());
             assertEquals(
-                    "update pizza set name=?, price=?, type=? where id_pizza=? -- [romana(String), 12.5(Double), DELUX(String), 100(Long)]",
+                    "update pizzas set name=?, price=?, kind=? where id_pizza=? -- [romana(String), 12.5(Double), DELUX(String), 100(Long)]",
                     o.update(new Pizza_(), romana).toString());
-            assertEquals("delete from pizza where id_pizza=? -- [100(Long)]",
+            assertEquals("delete from pizzas where id_pizza=? -- [100(Long)]",
                     o.delete(new Pizza_(), romana).toString());
         }
         {
@@ -72,7 +143,7 @@ public class QWERTYU2 {
             Pizza_ p = new Pizza_();
             // Pizza romana = new Pizza(100L, "romana", 12.5, EPizzaType.DELUX);
 
-            TypedQuery<Pizza> q = o.query(p);
+            Query<Pizza> q = o.query(p);
             q.append("select sum({}) from {} ", p.price, p);
             q.append("where {} ", Relational.and( //
                     p.id.lt(100L), //
@@ -81,7 +152,7 @@ public class QWERTYU2 {
             ));
 
             assertEquals(
-                    "select sum(price) from pizza where id_pizza<? and upper(name) like upper(?) and type in (?,?)  " + //
+                    "select sum(price) from pizzas where id_pizza<? and upper(name) like upper(?) and kind in (?,?)  " + //
                             "-- [100(Long), %oma%(String), REGULAR(String), DELUX(String)]", //
                     q.toString());
 
@@ -93,15 +164,15 @@ public class QWERTYU2 {
         public final Column<Pizza, Long> id = addPkColumn(Long.class, "idPizza", "id_pizza");
         public final Column<Pizza, String> name = addColumn(String.class, "name", "name");
         public final Column<Pizza, Double> price = addColumn(Double.class, "price", "price");
-        public final Column<Pizza, EPizzaType> type = addColumn(EPizzaType.class, "type", "type",
+        public final Column<Pizza, EPizzaType> type = addColumn(EPizzaType.class, "type", "kind",
                 new EnumColumnHandler<>(EPizzaType.class));
 
         public Pizza_() {
-            super(Pizza.class, "pizza");
+            super(Pizza.class, "pizzas");
         }
 
         public Pizza_(String alias) {
-            super(Pizza.class, "pizza", alias);
+            super(Pizza.class, "pizzas", alias);
         }
     }
 
@@ -168,11 +239,14 @@ public class QWERTYU2 {
 
     static class Query<E> implements IQueryObject {
 
+        final Mapable<E> mapable;
+
         final StringBuilder query;
         final List<Object> params;
 
-        public Query() {
+        public Query(Mapable<E> mapable) {
             super();
+            this.mapable = mapable;
             this.query = new StringBuilder();
             this.params = new ArrayList<>();
         }
@@ -211,6 +285,11 @@ public class QWERTYU2 {
             }
         }
 
+        // (DataAccesFacade facade, QueryObject qo, Mapable<E> mapable) {
+        public Executor<E> getExecutor(DataAccesFacade facade) {
+            return new Executor<E>(facade, this, mapable);
+        }
+
         @Override
         public String getQuery() {
             return query.toString();
@@ -232,32 +311,10 @@ public class QWERTYU2 {
         }
     }
 
-    static class TypedQuery<E> extends Query<E> {
-
-        final Table<E> table;
-
-        public TypedQuery(Table<E> table) {
-            this.table = table;
-        }
-    }
-
-    static class ScalarQuery<E> extends Query<E> {
-
-        final ColumnHandler<E> columnHandler;
-
-        public ScalarQuery(ColumnHandler<E> columnHandler) {
-            this.columnHandler = columnHandler;
-        }
-    }
-
     public static class Operations {
 
-        public <E> TypedQuery<E> query(Table<E> table) {
-            return new TypedQuery<>(table);
-        }
-
-        public <E> ScalarQuery<E> scalarQuery(ColumnHandler<E> columnHandler) {
-            return new ScalarQuery<>(columnHandler);
+        public <E> Query<E> query(Mapable<E> mapable) {
+            return new Query<>(mapable);
         }
 
         public <E> IQueryObject insert(Table<E> table, E entity) {
@@ -337,7 +394,7 @@ public class QWERTYU2 {
         String getAliasedName();
     }
 
-    public static class Table<E> implements Aliasable {
+    public static class Table<E> implements Aliasable, Mapable<E> {
 
         final String alias;
         final Class<E> entityClass;
@@ -400,6 +457,7 @@ public class QWERTYU2 {
             return alias;
         }
 
+        @Override
         public String getAliasedName() {
             if (alias == null) {
                 return tableName;
@@ -407,9 +465,26 @@ public class QWERTYU2 {
                 return tableName + " " + alias;
             }
         }
+
+        @Override
+        public E map(ResultSet rs) throws SQLException {
+            try {
+                E r = entityClass.newInstance();
+                for (Column<E, ?> c : columns) {
+                    c.loadValue(r, rs);
+                }
+                return r;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
-    public static class Column<E, T> implements Aliasable {
+    public static interface Mapable<T> {
+        T map(ResultSet rs) throws SQLException;
+    }
+
+    public static class Column<E, T> implements Aliasable, Mapable<T> {
 
         final Table<E> parentTable;
         final Class<T> columnClass;
@@ -440,6 +515,11 @@ public class QWERTYU2 {
             } else {
                 return parentTable.getAlias() + "." + columnName;
             }
+        }
+
+        @Override
+        public T map(ResultSet rs) throws SQLException {
+            return handler.readValue(rs, columnName);
         }
 
         public void loadValue(E entity, ResultSet rs) throws SQLException {
@@ -1152,4 +1232,590 @@ class Relational {
         r.append(")");
         return r;
     }
+}
+
+class Executor<E> {
+
+    final DataAccesFacade facade;
+    final IQueryObject qo;
+    final Mapable<E> mapable;
+
+    public Executor(DataAccesFacade facade, IQueryObject qo, Mapable<E> mapable) {
+        super();
+        this.facade = facade;
+        this.qo = qo;
+        this.mapable = mapable;
+    }
+
+    public int update() {
+        return facade.update(qo);
+    }
+
+    public E loadUnique() {
+        return facade.loadUnique(qo, mapable);
+    }
+
+    public List<E> load() {
+        return facade.load(qo, mapable);
+    }
+
+    // TODO
+    // public void loadPage(Pager<E> pager) {
+    // facade.loadPage(qo, mapable, pager);
+    // }
+}
+
+interface DataAccesFacade {
+
+    DataSource getDataSource();
+
+    <T> T loadUnique(IQueryObject q, Mapable<T> mapable) throws TooManyResultsException, EmptyResultException;
+
+    <T> List<T> load(IQueryObject q, Mapable<T> mapable);
+
+    int update(IQueryObject q);
+
+    // TODO <T> T extract(IQueryObject q, ResultSetExtractor<T> extractor);
+
+    void begin();
+
+    void commit();
+
+    void rollback();
+
+    boolean isValidTransaction();
+
+    Connection getCurrentConnection();
+
+}
+
+class JdbcDataAccesFacade implements DataAccesFacade {
+
+    static final Logger LOG = LoggerFactory.getLogger(JdbcDataAccesFacade.class);
+
+    protected final DataSource ds;
+
+    @Override
+    public DataSource getDataSource() {
+        return ds;
+    }
+
+    static class Tx {
+
+        final Connection c;
+        final Throwable opened;
+
+        public Tx(Connection c) {
+            super();
+            this.c = c;
+            this.opened = new Exception();
+            configureConnection();
+        }
+
+        void configureConnection() {
+            try {
+                c.setAutoCommit(false);
+                c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            } catch (final SQLException e) {
+                throw new LechugaException(e);
+            }
+        }
+
+        public boolean isValid() throws SQLException {
+            return !c.isClosed();
+        }
+
+        public Throwable getOpened() {
+            return opened;
+        }
+
+    }
+
+    static final ThreadLocal<Tx> threadton = new ThreadLocal<Tx>() {
+
+        @Override
+        protected Tx initialValue() {
+            return null;
+        };
+    };
+
+    public JdbcDataAccesFacade(DataSource ds) {
+        super();
+        this.ds = ds;
+    }
+
+    @Override
+    public void begin() {
+        createConnection();
+        LOG.debug("=> begin");
+    }
+
+    @Override
+    public Connection getCurrentConnection() {
+        return getConnection();
+    }
+
+    protected void createConnection() {
+        if (isValidTransaction()) {
+            throw new LechugaException("transaction is yet active", threadton.get().getOpened());
+        }
+        try {
+            threadton.set(new Tx(ds.getConnection()));
+        } catch (final SQLException e) {
+            throw new LechugaException(e);
+        }
+    }
+
+    protected Connection getConnection() {
+        try {
+            Tx tx = threadton.get();
+            if (tx == null || !tx.isValid()) {
+                throw new LechugaException("not in a valid transaction");
+            }
+            return tx.c;
+        } catch (final SQLException e) {
+            throw new LechugaException(e);
+        }
+    }
+
+    @Override
+    public boolean isValidTransaction() {
+        try {
+            return threadton.get() != null && threadton.get().isValid();
+        } catch (SQLException e) {
+            throw new LechugaException(e);
+        }
+    }
+
+    @Override
+    public void commit() {
+        final Connection c = getConnection();
+        try {
+            c.commit();
+            c.close();
+            LOG.debug("<= commit");
+        } catch (final Exception e) {
+            throw new LechugaException(e);
+        }
+    }
+
+    @Override
+    public void rollback() {
+        final Connection c = getConnection();
+        try {
+            c.rollback();
+            c.close();
+            LOG.debug("<= rollback");
+        } catch (final Exception e) {
+            throw new LechugaException(e);
+        }
+    }
+
+    protected void close() {
+        final Connection c = getConnection();
+        try {
+            c.close();
+            threadton.remove();
+        } catch (final Exception e) {
+            throw new LechugaException(e);
+        } finally {
+            threadton.remove();
+        }
+    }
+
+    PreparedStatement prepareStatement(Connection c, IQueryObject q) throws SQLException {
+        final PreparedStatement ps = c.prepareStatement(q.getQuery());
+        try {
+            Object[] args = q.getArgs();
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            return ps;
+        } catch (final SQLException e) {
+            closeResources(null, ps);
+            throw e;
+        }
+    }
+
+    void closeResources(ResultSet rs, PreparedStatement ps) {
+        if (rs != null) {
+            try {
+                rs.close();
+            } catch (final SQLException e) {
+                throw new LechugaException(e);
+            }
+        }
+        if (ps != null) {
+            try {
+                ps.close();
+            } catch (final SQLException e) {
+                throw new LechugaException(e);
+            }
+        }
+    }
+
+    @Override
+    public <T> T loadUnique(IQueryObject q, Mapable<T> mapable) throws TooManyResultsException, EmptyResultException {
+
+        LOG.debug("{}", q);
+        Connection c;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            c = getConnection();
+            ps = prepareStatement(c, q);
+            rs = ps.executeQuery();
+            if (!rs.next()) {
+                throw new EmptyResultException(q.toString());
+            }
+            final T r = mapable.map(rs);
+            if (rs.next()) {
+                throw new TooManyResultsException(q.toString());
+            }
+            return r;
+        } catch (final EmptyResultException e) {
+            throw e;
+        } catch (final SQLException e) {
+            throw new LechugaException(q.toString(), e);
+        } finally {
+            closeResources(rs, ps);
+        }
+    }
+
+    @Override
+    public <T> List<T> load(IQueryObject q, Mapable<T> mapable) {
+        LOG.debug("{}", q);
+        Connection c;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            c = getConnection();
+            ps = prepareStatement(c, q);
+            rs = ps.executeQuery();
+            final List<T> r = new ArrayList<T>();
+            while (rs.next()) {
+                r.add(mapable.map(rs));
+            }
+            return r;
+        } catch (final SQLException e) {
+            throw new LechugaException(q.toString(), e);
+        } finally {
+            closeResources(rs, ps);
+        }
+    }
+
+    @Override
+    public int update(final IQueryObject q) {
+        LOG.debug("{}", q);
+        Connection c;
+        PreparedStatement ps = null;
+        try {
+            c = getConnection();
+            ps = prepareStatement(c, q);
+            return ps.executeUpdate();
+        } catch (final SQLException e) {
+            throw new LechugaException(q.toString(), e);
+        } finally {
+            closeResources(null, ps);
+        }
+    }
+
+    // TODO
+    // @Override
+    // public <T> T extract(final IQueryObject q, final ResultSetExtractor<T>
+    // extractor) {
+    // LOG.debug("{}", q);
+    // Connection c;
+    // PreparedStatement ps = null;
+    // ResultSet rs = null;
+    // try {
+    // c = getConnection();
+    // ps = c.prepareStatement(q.getSql(), ResultSet.TYPE_SCROLL_INSENSITIVE,
+    // ResultSet.CONCUR_READ_ONLY);
+    // Object[] args = q.getArgs();
+    // for (int i = 0; i < args.length; i++) {
+    // ps.setObject(i + 1, args[i]);
+    // }
+    // rs = ps.executeQuery();
+    //
+    // return extractor.extract(rs);
+    //
+    // } catch (final SQLException e) {
+    // throw new LechugaException(q.toString(), e);
+    // } finally {
+    // closeResources(rs, ps);
+    // }
+    // }
+
+}
+
+class LechugaException extends RuntimeException {
+
+    private static final long serialVersionUID = 8727129333282283655L;
+
+    public LechugaException() {
+        super();
+    }
+
+    public LechugaException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
+
+    public LechugaException(final String message) {
+        super(message);
+    }
+
+    public LechugaException(final Throwable cause) {
+        super(cause);
+    }
+
+}
+
+class UnexpectedResultException extends RuntimeException {
+
+    private static final long serialVersionUID = 6193212451419056030L;
+
+    public UnexpectedResultException(String message) {
+        super(message);
+    }
+
+    public UnexpectedResultException(Exception e) {
+        super(e);
+    }
+
+}
+
+class TooManyResultsException extends UnexpectedResultException {
+
+    private static final long serialVersionUID = 677361547286326224L;
+
+    public TooManyResultsException(final String message) {
+        super(message);
+    }
+
+}
+
+class EmptyResultException extends UnexpectedResultException {
+
+    private static final long serialVersionUID = 8727129333282283655L;
+
+    public EmptyResultException(final String message) {
+        super(message);
+    }
+
+}
+
+class SqlScriptExecutor {
+
+    public static final String DEFAULT_CHARSETNAME = "UTF-8";
+
+    final DataAccesFacade facade;
+
+    public SqlScriptExecutor(final DataAccesFacade facade) {
+        super();
+        this.facade = facade;
+    }
+
+    public void runFromClasspath(final String classPathFileName) {
+        runFromClasspath(classPathFileName, DEFAULT_CHARSETNAME);
+    }
+
+    public void runFromClasspath(final String classPathFileName, final String charSetName) {
+        final String text = FileUtils.loadFileFromClasspath(classPathFileName, charSetName);
+        final List<String> stms = new SqlStatementParser(text).getStatementList();
+
+        execute(stms);
+    }
+
+    public void execute(final List<String> stms) {
+        for (final String stm : stms) {
+            facade.update(new QueryObject(stm));
+        }
+    }
+
+    public void execute(final String... stms) {
+        execute(Arrays.asList(stms));
+    }
+
+}
+
+class FileUtils {
+
+    public static String loadFileFromClasspath(final String fileName, final String charSetName) {
+        final InputStream is = loadFileFromClasspath(fileName);
+        InputStreamReader reader;
+        try {
+            reader = new InputStreamReader(is, charSetName);
+        } catch (final UnsupportedEncodingException e) {
+            throw new LechugaException(e);
+        }
+        return readFromReader(reader);
+    }
+
+    public static InputStream loadFileFromClasspath(final String fileName) {
+        final InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
+        if (is == null) {
+            throw new LechugaException("could not open file: " + fileName);
+        }
+        return is;
+    }
+
+    static String readFromReader(final Reader reader) {
+        final BufferedReader r = new BufferedReader(reader);
+        final StringBuilder strb = new StringBuilder();
+        try {
+            while (true) {
+                final String line = r.readLine();
+                if (line == null) {
+                    break;
+                }
+                strb.append(line).append('\n');
+            }
+            reader.close();
+        } catch (final IOException e) {
+            throw new LechugaException(e);
+        }
+        return strb.toString();
+    }
+
+}
+
+/**
+ * Perfoms the same as the following regexp: <tt>
+* (([^;]*?)?('.*?')?(/\\*(.|\\n)*?\\*\\/)?(--.*?\\n)?)*;\\s*
+* </tt> , but preventing Regexp's <i>strange</i> errors, i.e. StackOverflowError
+ * when working with large scripts.
+ */
+class SqlStatementParser {
+
+    // String textSenseColon = "([^;]*?)?";
+    // String literal = "('.*?')?";
+    // String multiLineComment = "(/\\*(.|\\n)*?\\*/)?";
+    // String singleLineComment = "(--.*?\\n)?";
+    //
+    // String regexp = "(" + textSenseColon + literal + multiLineComment +
+    // singleLineComment + ")*;\\s*";
+
+    public static final char DELIMITER = ';';
+    public static final char LITERAL_DELIMITER = '\'';
+    public static final String MULTI_LINE_COMMENT_START = "/*";
+    public static final String MULTI_LINE_COMMENT_END = "*/";
+    public static final String SINGLE_LINE_COMMENT_START = "--";
+    public static final char SINGLE_LINE_COMMENT_END = '\n';
+
+    final String script;
+    final boolean trimStatements;
+    int ssp, p;
+
+    public SqlStatementParser(final String script, final boolean trimStatements) {
+        super();
+        this.script = script;
+        this.trimStatements = trimStatements;
+    }
+
+    public SqlStatementParser(final String script) {
+        this(script, true);
+    }
+
+    public List<String> getStatementList() {
+        final List<String> stms = new ArrayList<String>();
+        ssp = 0; // statement start pointer
+        p = 0;
+
+        while (noteof()) {
+            while (noteof() && !isColon()) {
+                if (isLiteral()) {
+                    chupaLiteral();
+                } else if (isMLComment()) {
+                    chupaMLComment();
+                } else if (isSLComment()) {
+                    chupaSLComment();
+                } else {
+                    chupaText();
+                }
+            }
+            if (noteof() && isColon()) {
+                p++; // chupa ;
+                String stm = script.substring(ssp, p);
+                if (trimStatements) {
+                    stm = stm.trim();
+                }
+                stms.add(stm);
+                ssp = p;
+            }
+        }
+        return stms;
+    }
+
+    protected boolean noteof() {
+        return p < script.length();
+    }
+
+    protected boolean isText() {
+        final char c = script.charAt(p);
+        final char c2 = p + 1 < script.length() ? script.charAt(p + 1) : 0;
+        return
+        /**/c != DELIMITER &&
+        /**/c != LITERAL_DELIMITER &&
+        /**/!(c == MULTI_LINE_COMMENT_START.charAt(0) && c2 == MULTI_LINE_COMMENT_START.charAt(1)) &&
+        /**/!(c == SINGLE_LINE_COMMENT_START.charAt(0) && c2 == SINGLE_LINE_COMMENT_START.charAt(1));
+    }
+
+    protected void chupaText() {
+        while (noteof() && isText()) {
+            p++;
+        }
+    }
+
+    protected boolean isLiteral() {
+        final char c = script.charAt(p);
+        return c == LITERAL_DELIMITER;
+    }
+
+    protected void chupaLiteral() {
+        p++; // chupa '
+        while (!isLiteral()) {
+            p++;
+        }
+        p++; // chupa '
+    }
+
+    protected boolean isMLComment() {
+        final char c = script.charAt(p);
+        final char c2 = p + 1 < script.length() ? script.charAt(p + 1) : 0;
+        return c == MULTI_LINE_COMMENT_START.charAt(0) && c2 == MULTI_LINE_COMMENT_START.charAt(1);
+    }
+
+    protected boolean isMLCommentClosing() {
+        final char c = script.charAt(p);
+        final char c2 = p + 1 < script.length() ? script.charAt(p + 1) : 0;
+        return c == MULTI_LINE_COMMENT_END.charAt(0) && c2 == MULTI_LINE_COMMENT_END.charAt(1);
+    }
+
+    protected void chupaMLComment() {
+        p += MULTI_LINE_COMMENT_START.length(); // chupa
+        while (!isMLCommentClosing()) {
+            p++;
+        }
+        p += MULTI_LINE_COMMENT_END.length(); // chupa
+    }
+
+    protected boolean isSLComment() {
+        final char c = script.charAt(p);
+        final char c2 = p + 1 < script.length() ? script.charAt(p + 1) : 0;
+        return c == SINGLE_LINE_COMMENT_START.charAt(0) && c2 == SINGLE_LINE_COMMENT_START.charAt(1);
+    }
+
+    protected void chupaSLComment() {
+        p += SINGLE_LINE_COMMENT_START.length(); // chupa
+        while (script.charAt(p) != SINGLE_LINE_COMMENT_END) {
+            p++;
+        }
+        p++; // chupa \n
+    }
+
+    protected boolean isColon() {
+        return script.charAt(p) == DELIMITER;
+    }
+
 }
