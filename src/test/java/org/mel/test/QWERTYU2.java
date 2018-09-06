@@ -21,6 +21,13 @@ import java.util.StringJoiner;
 
 import org.junit.Test;
 
+/**
+ * Camarades, ha arribat a les meves mans la 4ª edició de l'"Angular Ejamples",
+ * fet de forma clandestina pel poble, i per al poble.
+ * <p>
+ * Avui us l'adjunto, en format privatiu-burgès: fem-ne bon ús.
+ *
+ */
 public class QWERTYU2 {
 
     @Test
@@ -59,6 +66,25 @@ public class QWERTYU2 {
                     o.update(new Pizza_(), romana).toString());
             assertEquals("delete from pizza where id_pizza=? -- [100(Long)]",
                     o.delete(new Pizza_(), romana).toString());
+        }
+        {
+            Operations o = new Operations();
+            Pizza_ p = new Pizza_();
+            // Pizza romana = new Pizza(100L, "romana", 12.5, EPizzaType.DELUX);
+
+            TypedQuery<Pizza> q = o.query(p);
+            q.append("select sum({}) from {} ", p.price, p);
+            q.append("where {} ", Relational.and( //
+                    p.id.lt(100L), //
+                    p.name.ilike(ELike.CONTAINS, "oma"), //
+                    p.type.in(EPizzaType.REGULAR, EPizzaType.DELUX) //
+            ));
+
+            assertEquals(
+                    "select sum(price) from pizza where id_pizza<? and upper(name) like upper(?) and type in (?,?)  " + //
+                            "-- [100(Long), %oma%(String), REGULAR(String), DELUX(String)]", //
+                    q.toString());
+
         }
     }
 
@@ -140,7 +166,99 @@ public class QWERTYU2 {
         }
     }
 
+    static class Query<E> implements IQueryObject {
+
+        final StringBuilder query;
+        final List<Object> params;
+
+        public Query() {
+            super();
+            this.query = new StringBuilder();
+            this.params = new ArrayList<>();
+        }
+
+        public void append(String queryFragment, Object... params) {
+
+            int p = 0;
+            int paramIndex = 0;
+            while (true) {
+                int pos = queryFragment.indexOf("{}", p);
+                if (pos < 0) {
+                    break;
+                }
+
+                this.query.append(queryFragment.substring(p, pos));
+                Object param = params[paramIndex++];
+                IQueryObject paramResult = evaluate(param);
+                this.query.append(paramResult.getQuery());
+                this.params.addAll(paramResult.getArgsList());
+
+                p = pos + "{}".length();
+            }
+            this.query.append(queryFragment.substring(p));
+        }
+
+        protected IQueryObject evaluate(Object param) {
+            if (param instanceof IQueryObject) {
+                return (IQueryObject) param;
+            } else if (param instanceof Aliasable) {
+                Aliasable t = (Aliasable) param;
+                QueryObject r = new QueryObject();
+                r.append(t.getAliasedName());
+                return r;
+            } else {
+                throw new RuntimeException(param.getClass().getName());
+            }
+        }
+
+        @Override
+        public String getQuery() {
+            return query.toString();
+        }
+
+        @Override
+        public Object[] getArgs() {
+            return params.toArray();
+        }
+
+        @Override
+        public List<Object> getArgsList() {
+            return params;
+        }
+
+        @Override
+        public String toString() {
+            return QueryObjectUtils.toString(this);
+        }
+    }
+
+    static class TypedQuery<E> extends Query<E> {
+
+        final Table<E> table;
+
+        public TypedQuery(Table<E> table) {
+            this.table = table;
+        }
+    }
+
+    static class ScalarQuery<E> extends Query<E> {
+
+        final ColumnHandler<E> columnHandler;
+
+        public ScalarQuery(ColumnHandler<E> columnHandler) {
+            this.columnHandler = columnHandler;
+        }
+    }
+
     public static class Operations {
+
+        public <E> TypedQuery<E> query(Table<E> table) {
+            return new TypedQuery<>(table);
+        }
+
+        public <E> ScalarQuery<E> scalarQuery(ColumnHandler<E> columnHandler) {
+            return new ScalarQuery<>(columnHandler);
+        }
 
         public <E> IQueryObject insert(Table<E> table, E entity) {
             QueryObject q = new QueryObject();
@@ -219,7 +337,7 @@ public class QWERTYU2 {
         String getAliasedName();
     }
 
-    public static class Table<E> {
+    public static class Table<E> implements Aliasable {
 
         final String alias;
         final Class<E> entityClass;
