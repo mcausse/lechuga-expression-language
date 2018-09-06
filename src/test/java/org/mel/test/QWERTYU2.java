@@ -1,6 +1,7 @@
 package org.mel.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * Camarades, ha arribat a les meves mans la 4ª edició de l'"Angular Ejamples",
  * fet de forma clandestina pel poble, i per al poble.
  * <p>
- * Avui us l'adjunto, en format privatiu-burgès: fem-ne bon ús.
+ * Us l'adjunto, en el format privatiu-burgès: fem-ne bon ús.
  *
  */
 public class QWERTYU2 {
@@ -83,16 +84,21 @@ public class QWERTYU2 {
             assertEquals("Pizza [idPizza=100, name=romana, price=12.9, type=DELUX]", romana.toString());
             facade.update(o.update(p, romana));
 
-            Query<Pizza> q = o.query(p);
-            q.append("select * from {} where {}", p, p.id.eq(100L));
+            Query<Pizza> q = o.query(p).append("select * from {} where {}", p, p.id.eq(100L));
+
             romana = q.getExecutor(facade).loadUnique();
             assertEquals("Pizza [idPizza=100, name=romana, price=12.9, type=DELUX]", romana.toString());
 
             assertEquals("[Pizza [idPizza=100, name=romana, price=12.9, type=DELUX]]",
                     q.getExecutor(facade).load().toString());
 
+            Query<Double> scalar = o.query(p.price).append("select sum({}) as {} from {}", p.price, p.price, p);
+            assertEquals(romana.getPrice(), scalar.getExecutor(facade).loadUnique());
+
             facade.update(o.delete(p, romana));
             assertEquals("[]", q.getExecutor(facade).load().toString());
+
+            assertNull(scalar.getExecutor(facade).loadUnique());
 
             facade.commit();
         } catch (Exception e) {
@@ -251,7 +257,7 @@ public class QWERTYU2 {
             this.params = new ArrayList<>();
         }
 
-        public void append(String queryFragment, Object... params) {
+        public Query<E> append(String queryFragment, Object... params) {
 
             int p = 0;
             int paramIndex = 0;
@@ -270,6 +276,8 @@ public class QWERTYU2 {
                 p = pos + "{}".length();
             }
             this.query.append(queryFragment.substring(p));
+
+            return this;
         }
 
         protected IQueryObject evaluate(Object param) {
