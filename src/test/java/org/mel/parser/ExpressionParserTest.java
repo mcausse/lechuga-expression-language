@@ -40,12 +40,12 @@ public class ExpressionParserTest {
     @MethodSource("testAstToStringProvider")
     void testAstToString(String inputExpression, String expectedStringAst) {
         ExpressionTokenizer t = new ExpressionTokenizer();
-            TokenIterator<Token> ti = t.tokenize("test", inputExpression, 1, 1);
+        TokenIterator<Token> ti = t.tokenize("test", inputExpression, 1, 1);
 
-            // Act
-            var str = ep.parseExpression(ti).toString();
+        // Act
+        var str = ep.parseExpression(ti).toString();
 
-            assertThat(str).isEqualTo(expectedStringAst);
+        assertThat(str).isEqualTo(expectedStringAst);
     }
 
     void eval(Object expectedResult, String expression, Map<String, Object> model) {
@@ -193,15 +193,15 @@ public class ExpressionParserTest {
         ExpressionEvaluator e = new ExpressionEvaluator();
         SourceRef s = new SourceRef("test", 1, 1);
 
-        assertEquals("true", e.evaluate(s, ":jou eq 'jou'", null).toString());
+        assertEquals(true, e.evaluate(s, ":jou eq 'jou'", null));
         assertEquals("jou", e.evaluate(s, " :jou ", null));
         assertEquals("joujuas", e.evaluate(s, " :jou+:juas ", null));
 
-        assertEquals("5", e.evaluate(s, " short 2 + short 3", null).toString());
-        assertEquals("5", e.evaluate(s, " int 2 + int 3", null).toString());
-        assertEquals("5", e.evaluate(s, " long 2 + long 3", null).toString());
-        assertEquals("5.0", e.evaluate(s, " float 2 + float 3", null).toString());
-        assertEquals("5.0", e.evaluate(s, " double 2 + double 3", null).toString());
+        assertEquals((short) 5, e.evaluate(s, " short 2 + short 3", null));
+        assertEquals(5, e.evaluate(s, " int 2 + int 3", null));
+        assertEquals(5L, e.evaluate(s, " long 2 + long 3", null));
+        assertEquals(5.0f, e.evaluate(s, " float 2 + float 3", null));
+        assertEquals(5.0, e.evaluate(s, " double 2 + double 3", null));
 
         assertEquals("3", e.evaluate(s, " string int long 3.14159", null));
     }
