@@ -1,17 +1,20 @@
 package org.mel.parser;
 
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mel.ExpressionEvaluator;
-import org.mel.parser.ExpressionParser;
 import org.mel.parser.ast.Ast;
 import org.mel.tokenizer.*;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -19,54 +22,30 @@ public class ExpressionParserTest {
 
     final ExpressionParser ep = new ExpressionParser();
 
-    @Test
-    public void testAstToString() throws Exception {
+    static Stream<Arguments> testAstToStringProvider() {
+        return Stream.of(
+                Arguments.of("model.dogs[1]['jou']", "(model.dogs[1.0][jou])"),
+                Arguments.of("not model.dogs[not 1]['jou']", "(not (model.dogs[(not 1.0)][jou]))"),
+                Arguments.of("1*2 % 3", "(1.0 * 2.0 % 3.0)"),
+                Arguments.of("1*not 2%3", "(1.0 * (not 2.0) % 3.0)"),
+                Arguments.of("1+2*3+4", "(1.0 + (2.0 * 3.0) + 4.0)"),
+                Arguments.of("true eq not false", "(true eq (not false))"),
+                Arguments.of("true and 1 eq 1 or false", "((true and (1.0 eq 1.0)) or false)"),
+                Arguments.of("true and (1 eq 1 or false)", "(true and ((1.0 eq 1.0) or false))"),
+                Arguments.of("2*(3+4-1)", "(2.0 * (3.0 + 4.0 - 1.0))")
+        );
+    }
 
+    @ParameterizedTest
+    @MethodSource("testAstToStringProvider")
+    void testAstToString(String inputExpression, String expectedStringAst) {
         ExpressionTokenizer t = new ExpressionTokenizer();
+            TokenIterator<Token> ti = t.tokenize("test", inputExpression, 1, 1);
 
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "model.dogs[1]['jou']", 1, 1);
-//            assertEquals(
-//                    "[SYM:model, SYM:., SYM:dogs, OPEN_CLAU:[, NUM:1.0, CLOSE_CLAU:], OPEN_CLAU:[, STR:jou, CLOSE_CLAU:]]",
-//                    ti.toString());
-            assertEquals("(model.dogs[1.0][jou])", ep.parseExpression(ti).toString());
-        }
+            // Act
+            var str = ep.parseExpression(ti).toString();
 
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "not model.dogs[not 1]['jou']", 1, 1);
-//            assertEquals(
-//                    "[SYM:not, SYM:model, SYM:., SYM:dogs, OPEN_CLAU:[, SYM:not, NUM:1.0, CLOSE_CLAU:], OPEN_CLAU:[, STR:jou, CLOSE_CLAU:]]",
-//                    ti.toString());
-            assertEquals("(not (model.dogs[(not 1.0)][jou]))", ep.parseExpression(ti).toString());
-        }
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "1*2 % 3", 1, 1);
-            assertEquals("(1.0 * 2.0 % 3.0)", ep.parseExpression(ti).toString());
-        }
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "1*not 2%3", 1, 1);
-            assertEquals("(1.0 * (not 2.0) % 3.0)", ep.parseExpression(ti).toString());
-        }
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "1+2*3+4", 1, 1);
-            assertEquals("(1.0 + (2.0 * 3.0) + 4.0)", ep.parseExpression(ti).toString());
-        }
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "true eq not false", 1, 1);
-            assertEquals("(true eq (not false))", ep.parseExpression(ti).toString());
-        }
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "true and 1 eq 1 or false", 1, 1);
-            assertEquals("((true and (1.0 eq 1.0)) or false)", ep.parseExpression(ti).toString());
-        }
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "true and (1 eq 1 or false)", 1, 1);
-            assertEquals("(true and ((1.0 eq 1.0) or false))", ep.parseExpression(ti).toString());
-        }
-        {
-            TokenIterator<Token> ti = t.tokenize("test", "2*(3+4-1)", 1, 1);
-            assertEquals("(2.0 * (3.0 + 4.0 - 1.0))", ep.parseExpression(ti).toString());
-        }
+            assertThat(str).isEqualTo(expectedStringAst);
     }
 
     void eval(Object expectedResult, String expression, Map<String, Object> model) {
@@ -181,7 +160,7 @@ public class ExpressionParserTest {
         }
         {
             Map<String, Object> model = new HashMap<>();
-            model.put("a", new Integer[][] { { 1, 2 }, { 3, 4 } });
+            model.put("a", new Integer[][]{{1, 2}, {3, 4}});
 
             eval(3, "a[1][0]", model);
         }

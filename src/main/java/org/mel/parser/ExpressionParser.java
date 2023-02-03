@@ -19,11 +19,17 @@ import java.util.StringJoiner;
 //*      <var>  ::= IDENT {"." IDENT}
 public class ExpressionParser {
 
-    public Ast parseExpression(TokenIterator<Token> i) {
-        Token t = i.current();
+    /**
+     * Parses the input {@link Token}s to an Abstract-Syntax Tree (AST) type.
+     *
+     * @param tokensIterator the input {@link Token}s collection.
+     * @return the parsed Abstract-Syntax Tree (AST)
+     */
+    public Ast parseExpression(TokenIterator<Token> tokensIterator) {
+        Token t = tokensIterator.current();
         try {
-            Ast r = parseExpAst(i);
-            if (i.notEof()) {
+            Ast r = parseExpAst(tokensIterator);
+            if (tokensIterator.notEof()) {
                 throw new RuntimeException("grammar exception");
             }
             return r;
@@ -39,7 +45,7 @@ public class ExpressionParser {
         List<Ast> right = new ArrayList<>();
 
         while (i.notEof() && i.current().getType() == EToken.SYM &&
-        /**/(i.current().getValue().equals("or") || i.current().getValue().equals("||"))) {
+                /**/(i.current().getValue().equals("or") || i.current().getValue().equals("||"))) {
             String op = (String) i.current().getValue();
             ops.add(op);
             i.next(); // chupa and
@@ -59,7 +65,7 @@ public class ExpressionParser {
         List<Ast> right = new ArrayList<>();
 
         while (i.notEof() && i.current().getType() == EToken.SYM &&
-        /**/(i.current().getValue().equals("and") || i.current().getValue().equals("&&"))) {
+                /**/(i.current().getValue().equals("and") || i.current().getValue().equals("&&"))) {
             String op = (String) i.current().getValue();
             ops.add(op);
             i.next(); // chupa and
@@ -78,12 +84,12 @@ public class ExpressionParser {
         Ast right = null;
 
         if (i.hasNext() && i.current().getType() == EToken.SYM && (
-        /**/i.current().getValue().equals("eq") || i.current().getValue().equals("==") ||
-        /**/i.current().getValue().equals("ne") || i.current().getValue().equals("!=") ||
-        /**/i.current().getValue().equals("le") || i.current().getValue().equals("<=") ||
-        /**/i.current().getValue().equals("ge") || i.current().getValue().equals(">=") ||
-        /**/i.current().getValue().equals("lt") || i.current().getValue().equals("<") ||
-        /**/i.current().getValue().equals("gt") || i.current().getValue().equals(">"))) {
+                /**/i.current().getValue().equals("eq") || i.current().getValue().equals("==") ||
+                /**/i.current().getValue().equals("ne") || i.current().getValue().equals("!=") ||
+                /**/i.current().getValue().equals("le") || i.current().getValue().equals("<=") ||
+                /**/i.current().getValue().equals("ge") || i.current().getValue().equals(">=") ||
+                /**/i.current().getValue().equals("lt") || i.current().getValue().equals("<") ||
+                /**/i.current().getValue().equals("gt") || i.current().getValue().equals(">"))) {
             op = (String) i.current().getValue();
             i.next(); // chupa op
             if (!i.notEof()) {
@@ -102,8 +108,8 @@ public class ExpressionParser {
         List<Ast> right = new ArrayList<>();
 
         while (i.notEof() && i.current().getType() == EToken.SYM && (
-        /**/i.current().getValue().equals("+") ||
-        /**/i.current().getValue().equals("-"))) {
+                /**/i.current().getValue().equals("+") ||
+                /**/i.current().getValue().equals("-"))) {
             String op = (String) i.current().getValue();
             ops.add(op);
             i.next(); // chupa +-
@@ -123,9 +129,9 @@ public class ExpressionParser {
         List<Ast> right = new ArrayList<>();
 
         while (i.notEof() && i.current().getType() == EToken.SYM && (
-        /**/i.current().getValue().equals("*") ||
-        /**/i.current().getValue().equals("/") ||
-        /**/i.current().getValue().equals("%"))) {
+                /**/i.current().getValue().equals("*") ||
+                /**/i.current().getValue().equals("/") ||
+                /**/i.current().getValue().equals("%"))) {
             String op = (String) i.current().getValue();
             ops.add(op);
             i.next(); // chupa */%
@@ -141,16 +147,16 @@ public class ExpressionParser {
     protected Ast parseExp5Ast(TokenIterator<Token> i) {
         List<String> ops = new ArrayList<>();
         while (i.current().getType() == EToken.SYM && (
-        /**/i.current().getValue().equals("not") ||
-        /**/i.current().getValue().equals("byte") ||
-        /**/i.current().getValue().equals("short") ||
-        /**/i.current().getValue().equals("int") ||
-        /**/i.current().getValue().equals("long") ||
-        /**/i.current().getValue().equals("float") ||
-        /**/i.current().getValue().equals("double") ||
-        /**/i.current().getValue().equals("string") ||
-        /**/i.current().getValue().equals("-")
-        /**/)) {
+                /**/i.current().getValue().equals("not") ||
+                /**/i.current().getValue().equals("byte") ||
+                /**/i.current().getValue().equals("short") ||
+                /**/i.current().getValue().equals("int") ||
+                /**/i.current().getValue().equals("long") ||
+                /**/i.current().getValue().equals("float") ||
+                /**/i.current().getValue().equals("double") ||
+                /**/i.current().getValue().equals("string") ||
+                /**/i.current().getValue().equals("-")
+                /**/)) {
             ops.add((String) i.current().getValue());
             i.next(); // chupa op
         }
@@ -179,23 +185,23 @@ public class ExpressionParser {
     protected Ast parseExpNAst(TokenIterator<Token> i) {
         EToken type = i.current().getType();
         switch (type) {
-        case OPEN_PARENTESIS: {
-            i.next();// chupa (
-            Ast r = parseExpAst(i);
-            i.next();// chupa )
-            return r;
-        }
-        case SYM:
-            return parseVar(i);
-        case NUM:
-        case STR:
-        case BOOL:
-        case NULL:
-            ExpNAst r = new ExpNAst(i.current().getSourceRef(), i.current().getValue());
-            i.next(); // chupa
-            return r;
-        default:
-            throw new TokenException(i.current().getSourceRef(), "unexpected token: " + i.current());
+            case OPEN_PARENTESIS: {
+                i.next();// chupa (
+                Ast r = parseExpAst(i);
+                i.next();// chupa )
+                return r;
+            }
+            case SYM:
+                return parseVar(i);
+            case NUM:
+            case STR:
+            case BOOL:
+            case NULL:
+                ExpNAst r = new ExpNAst(i.current().getSourceRef(), i.current().getValue());
+                i.next(); // chupa
+                return r;
+            default:
+                throw new TokenException(i.current().getSourceRef(), "unexpected token: " + i.current());
         }
     }
 
@@ -403,7 +409,7 @@ public class ExpressionParser {
                 for (String op : ops) {
                     j.add(op);
                 }
-                return "(" + j.toString() + " " + right + ")";
+                return "(" + j + " " + right + ")";
             }
             return right.toString();
         }

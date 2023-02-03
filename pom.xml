@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.homs</groupId>
-	<artifactId>mel</artifactId>
+	<artifactId>lechuga-el</artifactId>
 	<version>0.0.2-SNAPSHOT</version>
 
 	<dependencies>
@@ -52,8 +52,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>2.3.2</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>11</source>
+					<target>11</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>

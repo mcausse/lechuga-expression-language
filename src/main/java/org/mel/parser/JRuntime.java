@@ -10,7 +10,7 @@ import java.util.*;
 
 public class JRuntime {
 
-    @SuppressWarnings({ "rawtypes" })
+    @SuppressWarnings({"rawtypes"})
     public static Collection<?> toKeysList(Object elements) {
         if (elements == null) {
             throw new RuntimeException();
@@ -134,7 +134,7 @@ public class JRuntime {
 
     static Number getNumber(Object o) {
         if (o == null || !(o instanceof Number)) {
-            throw new RuntimeException("unexpected value: " + String.valueOf(o) + " (" + o.getClass().getName() + ")");
+            throw new RuntimeException("unexpected value: " + o + " (" + o.getClass().getName() + ")");
         }
         return (Number) o;
     }
@@ -175,23 +175,23 @@ public class JRuntime {
             int type = findType(n);
 
             switch (type) {
-            case 0:
-                return -n.byteValue();
-            case 1:
-                return -n.shortValue();
-            case 2:
-                return -n.intValue();
-            case 3:
-                return -n.longValue();
-            case 4:
-                return -n.floatValue();
-            case 5:
-                return -n.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return -n.byteValue();
+                case 1:
+                    return -n.shortValue();
+                case 2:
+                    return -n.intValue();
+                case 3:
+                    return -n.longValue();
+                case 4:
+                    return -n.floatValue();
+                case 5:
+                    return -n.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException("-" + String.valueOf(o), e);
+            throw new RuntimeException("-" + o, e);
         }
     }
 
@@ -210,23 +210,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() + n2.byteValue();
-            case 1:
-                return Short.valueOf((short) (n1.shortValue() + n2.shortValue()));
-            case 2:
-                return n1.intValue() + n2.intValue();
-            case 3:
-                return n1.longValue() + n2.longValue();
-            case 4:
-                return n1.floatValue() + n2.floatValue();
-            case 5:
-                return n1.doubleValue() + n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() + n2.byteValue();
+                case 1:
+                    return Short.valueOf((short) (n1.shortValue() + n2.shortValue()));
+                case 2:
+                    return n1.intValue() + n2.intValue();
+                case 3:
+                    return n1.longValue() + n2.longValue();
+                case 4:
+                    return n1.floatValue() + n2.floatValue();
+                case 5:
+                    return n1.doubleValue() + n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
@@ -239,23 +239,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() - n2.byteValue();
-            case 1:
-                return n1.shortValue() - n2.shortValue();
-            case 2:
-                return n1.intValue() - n2.intValue();
-            case 3:
-                return n1.longValue() - n2.longValue();
-            case 4:
-                return n1.floatValue() - n2.floatValue();
-            case 5:
-                return n1.doubleValue() - n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() - n2.byteValue();
+                case 1:
+                    return n1.shortValue() - n2.shortValue();
+                case 2:
+                    return n1.intValue() - n2.intValue();
+                case 3:
+                    return n1.longValue() - n2.longValue();
+                case 4:
+                    return n1.floatValue() - n2.floatValue();
+                case 5:
+                    return n1.doubleValue() - n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
@@ -268,23 +268,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() * n2.byteValue();
-            case 1:
-                return n1.shortValue() * n2.shortValue();
-            case 2:
-                return n1.intValue() * n2.intValue();
-            case 3:
-                return n1.longValue() * n2.longValue();
-            case 4:
-                return n1.floatValue() * n2.floatValue();
-            case 5:
-                return n1.doubleValue() * n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() * n2.byteValue();
+                case 1:
+                    return n1.shortValue() * n2.shortValue();
+                case 2:
+                    return n1.intValue() * n2.intValue();
+                case 3:
+                    return n1.longValue() * n2.longValue();
+                case 4:
+                    return n1.floatValue() * n2.floatValue();
+                case 5:
+                    return n1.doubleValue() * n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
@@ -297,23 +297,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() / n2.byteValue();
-            case 1:
-                return n1.shortValue() / n2.shortValue();
-            case 2:
-                return n1.intValue() / n2.intValue();
-            case 3:
-                return n1.longValue() / n2.longValue();
-            case 4:
-                return n1.floatValue() / n2.floatValue();
-            case 5:
-                return n1.doubleValue() / n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() / n2.byteValue();
+                case 1:
+                    return n1.shortValue() / n2.shortValue();
+                case 2:
+                    return n1.intValue() / n2.intValue();
+                case 3:
+                    return n1.longValue() / n2.longValue();
+                case 4:
+                    return n1.floatValue() / n2.floatValue();
+                case 5:
+                    return n1.doubleValue() / n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
@@ -326,23 +326,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() % n2.byteValue();
-            case 1:
-                return n1.shortValue() % n2.shortValue();
-            case 2:
-                return n1.intValue() % n2.intValue();
-            case 3:
-                return n1.longValue() % n2.longValue();
-            case 4:
-                return n1.floatValue() % n2.floatValue();
-            case 5:
-                return n1.doubleValue() % n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() % n2.byteValue();
+                case 1:
+                    return n1.shortValue() % n2.shortValue();
+                case 2:
+                    return n1.intValue() % n2.intValue();
+                case 3:
+                    return n1.longValue() % n2.longValue();
+                case 4:
+                    return n1.floatValue() % n2.floatValue();
+                case 5:
+                    return n1.doubleValue() % n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
@@ -355,23 +355,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() > n2.byteValue();
-            case 1:
-                return n1.shortValue() > n2.shortValue();
-            case 2:
-                return n1.intValue() > n2.intValue();
-            case 3:
-                return n1.longValue() > n2.longValue();
-            case 4:
-                return n1.floatValue() > n2.floatValue();
-            case 5:
-                return n1.doubleValue() > n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() > n2.byteValue();
+                case 1:
+                    return n1.shortValue() > n2.shortValue();
+                case 2:
+                    return n1.intValue() > n2.intValue();
+                case 3:
+                    return n1.longValue() > n2.longValue();
+                case 4:
+                    return n1.floatValue() > n2.floatValue();
+                case 5:
+                    return n1.doubleValue() > n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
@@ -384,23 +384,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() < n2.byteValue();
-            case 1:
-                return n1.shortValue() < n2.shortValue();
-            case 2:
-                return n1.intValue() < n2.intValue();
-            case 3:
-                return n1.longValue() < n2.longValue();
-            case 4:
-                return n1.floatValue() < n2.floatValue();
-            case 5:
-                return n1.doubleValue() < n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() < n2.byteValue();
+                case 1:
+                    return n1.shortValue() < n2.shortValue();
+                case 2:
+                    return n1.intValue() < n2.intValue();
+                case 3:
+                    return n1.longValue() < n2.longValue();
+                case 4:
+                    return n1.floatValue() < n2.floatValue();
+                case 5:
+                    return n1.doubleValue() < n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
@@ -413,23 +413,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() >= n2.byteValue();
-            case 1:
-                return n1.shortValue() >= n2.shortValue();
-            case 2:
-                return n1.intValue() >= n2.intValue();
-            case 3:
-                return n1.longValue() >= n2.longValue();
-            case 4:
-                return n1.floatValue() >= n2.floatValue();
-            case 5:
-                return n1.doubleValue() >= n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() >= n2.byteValue();
+                case 1:
+                    return n1.shortValue() >= n2.shortValue();
+                case 2:
+                    return n1.intValue() >= n2.intValue();
+                case 3:
+                    return n1.longValue() >= n2.longValue();
+                case 4:
+                    return n1.floatValue() >= n2.floatValue();
+                case 5:
+                    return n1.doubleValue() >= n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
@@ -442,23 +442,23 @@ public class JRuntime {
             int type = findUpperType(n1, n2);
 
             switch (type) {
-            case 0:
-                return n1.byteValue() <= n2.byteValue();
-            case 1:
-                return n1.shortValue() <= n2.shortValue();
-            case 2:
-                return n1.intValue() <= n2.intValue();
-            case 3:
-                return n1.longValue() <= n2.longValue();
-            case 4:
-                return n1.floatValue() <= n2.floatValue();
-            case 5:
-                return n1.doubleValue() <= n2.doubleValue();
-            default:
-                throw new RuntimeException();
+                case 0:
+                    return n1.byteValue() <= n2.byteValue();
+                case 1:
+                    return n1.shortValue() <= n2.shortValue();
+                case 2:
+                    return n1.intValue() <= n2.intValue();
+                case 3:
+                    return n1.longValue() <= n2.longValue();
+                case 4:
+                    return n1.floatValue() <= n2.floatValue();
+                case 5:
+                    return n1.doubleValue() <= n2.doubleValue();
+                default:
+                    throw new RuntimeException();
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.valueOf(o1) + "+" + String.valueOf(o2), e);
+            throw new RuntimeException(o1 + "+" + o2, e);
         }
     }
 
