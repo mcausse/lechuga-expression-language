@@ -1,15 +1,12 @@
 package org.mel.parser;
 
+import org.mel.parser.ast.Ast;
+import org.mel.tokenizer.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
-
-import org.mel.tokenizer.EToken;
-import org.mel.tokenizer.SourceRef;
-import org.mel.tokenizer.Token;
-import org.mel.tokenizer.TokenException;
-import org.mel.tokenizer.TokenIterator;
 
 //*      <exp>  ::= <exp1> {<op-or> <exp1>}             (menys prioritari!)
 //*      <exp1> ::= <exp2> {<op-and> <exp2>}
@@ -22,30 +19,17 @@ import org.mel.tokenizer.TokenIterator;
 //*      <var>  ::= IDENT {"." IDENT}
 public class ExpressionParser {
 
-    public static interface Ast {
-        Object evaluate(Map<String, Object> model);
-
-        SourceRef getSourceRef();
-    }
-
-    // final ExpressionTokenizer t = new ExpressionTokenizer();
-
-    public Ast parseExpression(List<Token> expressionTokens) {
-        TokenIterator<Token> i = new TokenIterator<>(expressionTokens);
+    public Ast parseExpression(TokenIterator<Token> i) {
         Token t = i.current();
         try {
-            Ast r = parseExpression(i);
+            Ast r = parseExpAst(i);
             if (i.notEof()) {
                 throw new RuntimeException("grammar exception");
             }
             return r;
         } catch (Exception e) {
-            throw new TokenException(t.getSourceRef(), "evaluating expression: " + expressionTokens, e);
+            throw new TokenException(t.getSourceRef(), "evaluating expression: " + t, e);
         }
-    }
-
-    public Ast parseExpression(TokenIterator<Token> i) {
-        return parseExpAst(i);
     }
 
     protected Ast parseExpAst(TokenIterator<Token> i) {
@@ -181,7 +165,7 @@ public class ExpressionParser {
         while (i.hasNext() && i.current().getType() == EToken.OPEN_CLAU) {
             i.next(); // chupa [
 
-            right.add(parseExpression(i));
+            right.add(parseExpAst(i));
 
             if (i.current().getType() != EToken.CLOSE_CLAU) {
                 throw new TokenException(i.current().getSourceRef(),
@@ -197,7 +181,7 @@ public class ExpressionParser {
         switch (type) {
         case OPEN_PARENTESIS: {
             i.next();// chupa (
-            Ast r = parseExpression(i);
+            Ast r = parseExpAst(i);
             i.next();// chupa )
             return r;
         }
