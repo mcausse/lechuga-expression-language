@@ -1,80 +1,57 @@
-package org.mel.test;
+package org.mel.parser;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mel.ExpressionEvaluator;
+import org.mel.parser.ast.Ast;
+import org.mel.tokenizer.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import org.junit.Test;
-import org.mel.ExpressionEvaluator;
-import org.mel.parser.ExpressionParser;
-import org.mel.parser.ExpressionParser.Ast;
-import org.mel.tokenizer.ExpressionTokenizer;
-import org.mel.tokenizer.SourceRef;
-import org.mel.tokenizer.Token;
-import org.mel.tokenizer.TokenException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ExpressionParserTest {
 
     final ExpressionParser ep = new ExpressionParser();
 
-    @Test
-    public void testAstToString() throws Exception {
+    static Stream<Arguments> testAstToStringProvider() {
+        return Stream.of(
+                Arguments.of("model.dogs[1]['jou']", "(model.dogs[1.0][jou])"),
+                Arguments.of("not model.dogs[not 1]['jou']", "(not (model.dogs[(not 1.0)][jou]))"),
+                Arguments.of("1*2 % 3", "(1.0 * 2.0 % 3.0)"),
+                Arguments.of("1*not 2%3", "(1.0 * (not 2.0) % 3.0)"),
+                Arguments.of("1+2*3+4", "(1.0 + (2.0 * 3.0) + 4.0)"),
+                Arguments.of("true eq not false", "(true eq (not false))"),
+                Arguments.of("true and 1 eq 1 or false", "((true and (1.0 eq 1.0)) or false)"),
+                Arguments.of("true and (1 eq 1 or false)", "(true and ((1.0 eq 1.0) or false))"),
+                Arguments.of("2*(3+4-1)", "(2.0 * (3.0 + 4.0 - 1.0))")
+        );
+    }
 
+    @ParameterizedTest
+    @MethodSource("testAstToStringProvider")
+    void testAstToString(String inputExpression, String expectedStringAst) {
         ExpressionTokenizer t = new ExpressionTokenizer();
+        TokenIterator<Token> ti = t.tokenize("test", inputExpression, 1, 1);
 
-        {
-            List<Token> ts = t.tokenize("test", "model.dogs[1]['jou']", 1, 1);
-            assertEquals(
-                    "[SYM:model, SYM:., SYM:dogs, OPEN_CLAU:[, NUM:1.0, CLOSE_CLAU:], OPEN_CLAU:[, STR:jou, CLOSE_CLAU:]]",
-                    ts.toString());
-            assertEquals("(model.dogs[1.0][jou])", ep.parseExpression(ts).toString());
-        }
+        // Act
+        var str = ep.parseExpression(ti).toString();
 
-        {
-            List<Token> ts = t.tokenize("test", "not model.dogs[not 1]['jou']", 1, 1);
-            assertEquals(
-                    "[SYM:not, SYM:model, SYM:., SYM:dogs, OPEN_CLAU:[, SYM:not, NUM:1.0, CLOSE_CLAU:], OPEN_CLAU:[, STR:jou, CLOSE_CLAU:]]",
-                    ts.toString());
-            assertEquals("(not (model.dogs[(not 1.0)][jou]))", ep.parseExpression(ts).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "1*2 % 3", 1, 1);
-            assertEquals("(1.0 * 2.0 % 3.0)", ep.parseExpression(ts).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "1*not 2%3", 1, 1);
-            assertEquals("(1.0 * (not 2.0) % 3.0)", ep.parseExpression(ts).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "1+2*3+4", 1, 1);
-            assertEquals("(1.0 + (2.0 * 3.0) + 4.0)", ep.parseExpression(ts).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "true eq not false", 1, 1);
-            assertEquals("(true eq (not false))", ep.parseExpression(ts).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "true and 1 eq 1 or false", 1, 1);
-            assertEquals("((true and (1.0 eq 1.0)) or false)", ep.parseExpression(ts).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "true and (1 eq 1 or false)", 1, 1);
-            assertEquals("(true and ((1.0 eq 1.0) or false))", ep.parseExpression(ts).toString());
-        }
-        {
-            List<Token> ts = t.tokenize("test", "2*(3+4-1)", 1, 1);
-            assertEquals("(2.0 * (3.0 + 4.0 - 1.0))", ep.parseExpression(ts).toString());
-        }
+        assertThat(str).isEqualTo(expectedStringAst);
     }
 
     void eval(Object expectedResult, String expression, Map<String, Object> model) {
         ExpressionTokenizer t = new ExpressionTokenizer();
-        List<Token> ts = t.tokenize("test", expression, 1, 1);
-        Ast ast = ep.parseExpression(ts);
+        TokenIterator<Token> ti = t.tokenize("test", expression, 1, 1);
+        Ast ast = ep.parseExpression(ti);
         assertEquals(expectedResult, ast.evaluate(model));
 
         if (model != null) {
@@ -106,8 +83,8 @@ public class ExpressionParserTest {
             Map<String, Object> model = new HashMap<>();
             model.put("name", "mhc");
 
-            List<Token> ts = t.tokenize("test", "name", 1, 1);
-            Ast ast = ep.parseExpression(ts);
+            TokenIterator<Token> ti = t.tokenize("test", "name", 1, 1);
+            Ast ast = ep.parseExpression(ti);
             assertEquals("mhc", ast.evaluate(model).toString());
             eval("mhc", "name", model);
         }
@@ -116,8 +93,8 @@ public class ExpressionParserTest {
             Map<String, Object> model = new HashMap<>();
             model.put("name", Arrays.asList("mhc", "mem"));
 
-            List<Token> ts = t.tokenize("test", "name[1]", 1, 1);
-            Ast ast = ep.parseExpression(ts);
+            TokenIterator<Token> ti = t.tokenize("test", "name[1]", 1, 1);
+            Ast ast = ep.parseExpression(ti);
             assertEquals("mem", ast.evaluate(model).toString());
             eval("mem", "name[1]", model);
         }
@@ -125,8 +102,8 @@ public class ExpressionParserTest {
             Map<String, Object> model = new HashMap<>();
             model.put("name", "mhc");
 
-            List<Token> ts = t.tokenize("test", "name.class.simpleName.trim.toUpperCase", 1, 1);
-            Ast ast = ep.parseExpression(ts);
+            TokenIterator<Token> ti = t.tokenize("test", "name.class.simpleName.trim.toUpperCase", 1, 1);
+            Ast ast = ep.parseExpression(ti);
             assertEquals("STRING", ast.evaluate(model).toString());
             eval("STRING", "name.class.simpleName.trim.toUpperCase", model);
         }
@@ -135,8 +112,8 @@ public class ExpressionParserTest {
             Map<String, Object> model = new HashMap<>();
             model.put("age", 32);
 
-            List<Token> ts = t.tokenize("test", "age>=32&&age<=45", 1, 1);
-            Ast ast = ep.parseExpression(ts);
+            TokenIterator<Token> ti = t.tokenize("test", "age>=32&&age<=45", 1, 1);
+            Ast ast = ep.parseExpression(ti);
             assertEquals("true", ast.evaluate(model).toString());
             eval(true, "age>=32&&age<=45", model);
         }
@@ -144,8 +121,8 @@ public class ExpressionParserTest {
             Map<String, Object> model = new HashMap<>();
             model.put("alive", true);
 
-            List<Token> ts = t.tokenize("test", "alive&&true", 1, 1);
-            Ast ast = ep.parseExpression(ts);
+            TokenIterator<Token> ti = t.tokenize("test", "alive&&true", 1, 1);
+            Ast ast = ep.parseExpression(ti);
             assertEquals("true", ast.evaluate(model).toString());
             eval(true, "alive&&true", model);
         }
@@ -183,7 +160,7 @@ public class ExpressionParserTest {
         }
         {
             Map<String, Object> model = new HashMap<>();
-            model.put("a", new Integer[][] { { 1, 2 }, { 3, 4 } });
+            model.put("a", new Integer[][]{{1, 2}, {3, 4}});
 
             eval(3, "a[1][0]", model);
         }
@@ -216,15 +193,15 @@ public class ExpressionParserTest {
         ExpressionEvaluator e = new ExpressionEvaluator();
         SourceRef s = new SourceRef("test", 1, 1);
 
-        assertEquals("true", e.evaluate(s, ":jou eq 'jou'", null).toString());
+        assertEquals(true, e.evaluate(s, ":jou eq 'jou'", null));
         assertEquals("jou", e.evaluate(s, " :jou ", null));
         assertEquals("joujuas", e.evaluate(s, " :jou+:juas ", null));
 
-        assertEquals("5", e.evaluate(s, " short 2 + short 3", null).toString());
-        assertEquals("5", e.evaluate(s, " int 2 + int 3", null).toString());
-        assertEquals("5", e.evaluate(s, " long 2 + long 3", null).toString());
-        assertEquals("5.0", e.evaluate(s, " float 2 + float 3", null).toString());
-        assertEquals("5.0", e.evaluate(s, " double 2 + double 3", null).toString());
+        assertEquals((short) 5, e.evaluate(s, " short 2 + short 3", null));
+        assertEquals(5, e.evaluate(s, " int 2 + int 3", null));
+        assertEquals(5L, e.evaluate(s, " long 2 + long 3", null));
+        assertEquals(5.0f, e.evaluate(s, " float 2 + float 3", null));
+        assertEquals(5.0, e.evaluate(s, " double 2 + double 3", null));
 
         assertEquals("3", e.evaluate(s, " string int long 3.14159", null));
     }
